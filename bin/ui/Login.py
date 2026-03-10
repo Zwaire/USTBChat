@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBox
 from PySide6.QtCore import Qt
 
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
+from ..Message import LoginInfo
 
 class LoginWindow(QWidget):
     '''
@@ -36,25 +37,35 @@ class LoginWindow(QWidget):
         # 窗口属性设置
         self.setWindowTitle("登录")                # 窗口标题
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setFixedSize(600, 300)               # 窗口尺寸
+        self.setFixedSize(600, 320)               # 窗口尺寸
 
         self.initUI()
 
     def initUI(self):
+
         self.creWidgets()
         self.applyLayout()
+        self.slotsConnect()
 
     def creWidgets(self):
         '''
         仅创建所有用到的组件, 不设置布局
         '''
 
-        # UID或昵称(以下用ID代替)输入框
-        self.idInputer = TextInput("账户: ", "请输入你的UID或昵称")
-        self.idInputer.setAlignment(ClassicLayout.Left)
-        # 密码输入框
-        self.pwdInputer = TextInput("密码: ", "请输入密码", TextInput.Hidden)
-        self.pwdInputer.setAlignment(ClassicLayout.Left)
+        # UID或昵称(以下用ID代替)输入框-登录界面
+        self.idInputerLogin = TextInput("账户: ", "请输入你的UID或昵称")
+        self.idInputerLogin.setAlignment(ClassicLayout.Left)
+        # ID输入框-注册界面
+        self.idInputerRegister = TextInput("账       户: ", "请输入你的昵称")
+        self.idInputerRegister.setAlignment(ClassicLayout.Left)
+
+        # 密码输入框-登录界面
+        self.pwdInputerLogin = TextInput("密码: ", "请输入密码", TextInput.Hidden)
+        self.pwdInputerLogin.setAlignment(ClassicLayout.Left)
+        # 密码输入框-注册界面
+        self.pwdInputerRegister = TextInput("密       码: ", "请输入密码", TextInput.Hidden)
+        self.pwdInputerRegister.setAlignment(ClassicLayout.Left)
+        
         # 密码确认框
         self.pwdVerification = TextInput("确认密码: ", "再次输入相同的密码", TextInput.Hidden)
         self.pwdVerification.setAlignment(ClassicLayout.Left)
@@ -75,12 +86,12 @@ class LoginWindow(QWidget):
         # 登录界面
         self.loginWindow = QWidget()
         self.loginWindow.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.loginWindow.setFixedSize(600, 300)
+        self.loginWindow.setFixedSize(600, 320)
 
         # 注册界面
         self.registerWindow = QWidget()
         self.registerWindow.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.registerWindow.setFixedSize(600, 300)
+        self.registerWindow.setFixedSize(600, 320)
 
     def applyLayout(self):
         '''
@@ -107,17 +118,17 @@ class LoginWindow(QWidget):
         # 登录界面布局
         self.loginLayout = ClassicLayout.Vertical(align=ClassicLayout.CTop, constr=ClassicLayout.MinMax, margins=(80, 40, 80, 40), spacing=10)
 
-        self.loginLayout.addLayout(self.idInputer, 0)
-        self.loginLayout.addLayout(self.pwdInputer, 0)
+        self.loginLayout.addLayout(self.idInputerLogin, 0)
+        self.loginLayout.addLayout(self.pwdInputerLogin, 0)
         self.loginLayout.addLayout(self.pnrLayout, 0)
         self.loginLayout.addStretch(1)
         self.loginLayout.addWidget(self.loginButton, 0, alignment=ClassicLayout.CBottom)
 
         # 注册界面布局
-        self.registerLayout = ClassicLayout.Vertical(align=ClassicLayout.CTop, constr=ClassicLayout.MinMax, margins=(80, 40, 80, 40), spacing=10)
+        self.registerLayout = ClassicLayout.Vertical(align=ClassicLayout.CTop, constr=ClassicLayout.MinMax, margins=(60, 40, 60, 40), spacing=10)
 
-        self.registerLayout.addLayout(self.idInputer, 0)
-        self.registerLayout.addLayout(self.pwdInputer, 0)
+        self.registerLayout.addLayout(self.idInputerRegister, 0)
+        self.registerLayout.addLayout(self.pwdInputerRegister, 0)
         self.registerLayout.addLayout(self.pwdVerification, 0)
         self.registerLayout.addLayout(self.pnlLayout, 0)
         self.registerLayout.addStretch(1)
@@ -139,6 +150,34 @@ class LoginWindow(QWidget):
         self.mainLayout.addLayout(self.switchLayout, 1)
 
         self.setLayout(self.mainLayout)
+
+    def slotsConnect(self):
+        self.regAccountButton.clicked.connect(lambda checked: self.switchToRegister())
+        self.loginAccountButton.clicked.connect(lambda checked: self.switchToLogin())
+
+    def packLoginInfo(self) -> LoginInfo:
+
+        mode = self.switchLayout.currentIndex()
+        
+        if mode == 0:
+            # 登录界面
+            id = self.idInputerLogin.getInput()
+            password = self.pwdInputerLogin.getInput()
+        
+        else:
+            # 注册界面
+            id = self.idInputerRegister.getInput()
+            password = self.pwdInputerRegister.getInput()
+        
+        return LoginInfo(mode, id, password)
+
+    def switchToRegister(self):
+        self.switchLayout.setCurrentIndex(1)
+        self.update()
+    
+    def switchToLogin(self):
+        self.switchLayout.setCurrentIndex(0)
+        self.update()
 
 if __name__ == '__main__':
     MMApp = QApplication(sys.argv)

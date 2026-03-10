@@ -38,7 +38,6 @@ class Fonts:
         font.setPointSize(size)
         return font
 
-
 class TextInput(QHBoxLayout):
     '''
     横向输入框, 由描述和输入框组成
