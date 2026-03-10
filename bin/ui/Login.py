@@ -2,13 +2,14 @@
 
 import os
 import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from pathlib import Path
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QLineEdit,
                                QStackedLayout)
 from PySide6.QtCore import Qt
 
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
-from ..Message import LoginInfo
+from bin.Message import LoginInfo
 
 class LoginWindow(QWidget):
     '''
