@@ -220,26 +220,29 @@ class LoginWindow(QWidget):
         self.connectSignals()
 
     def creWidgets(self):
-        self.idInputer        = TextInput("账户: ",    "请输入你的UID或昵称")
+        self.idInputer        = TextInput("账户: ",    "请输入你的UID或昵称",  labelWidth=90)
         self.idInputer.setAlignment(ClassicLayout.Left)
-        self.pwdInputer       = TextInput("密码: ",    "请输入密码",         TextInput.Hidden)
+        self.pwdInputer       = TextInput("密码: ",    "请输入密码",         TextInput.Hidden, labelWidth=90)
         self.pwdInputer.setAlignment(ClassicLayout.Left)
-        self.pwdVerification  = TextInput("确认密码: ", "再次输入相同的密码",  TextInput.Hidden)
+        self.pwdVerification  = TextInput("确认密码: ", "再次输入相同的密码",  TextInput.Hidden, labelWidth=90)
         self.pwdVerification.setAlignment(ClassicLayout.Left)
 
         # 注册界面的昵称输入框（不允许纯数字）
-        self.nicknameInputer  = TextInput("昵称: ",    "请输入昵称")
+        self.nicknameInputer  = TextInput("昵称: ",    "请输入昵称", labelWidth=90)
         self.nicknameInputer.setAlignment(ClassicLayout.Left)
+        # 注册界面独立的密码框（不能与登录界面共用同一布局对象）
+        self.pwdInputer2      = TextInput("密码: ",    "请输入密码", TextInput.Hidden, labelWidth=90)
+        self.pwdInputer2.setAlignment(ClassicLayout.Left)
 
         self.loginButton    = Button("登录", "信息填写完毕后点击登录")
         self.registerButton = Button("注册", "信息填写完毕后点击注册")
         for btn in (self.loginButton, self.registerButton):
             btn.setObjectName("mainBtn")
 
-        self.pwdFoundButtonLogin    = Button("找回密码", size=(100, 24), font=Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
-        self.pwdFoundButtonRegister = Button("找回密码", size=(100, 24), font=Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
-        self.regAccountButton       = Button("注册账户", size=(100, 24), font=Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
-        self.loginAccountButton     = Button("登录账户", size=(100, 24), font=Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
+        self.pwdFoundButtonLogin    = Button("找回密码", size=(100, 24), font=Fonts.sizedFont(Fonts.UniversalPlainFont, 15))
+        self.pwdFoundButtonRegister = Button("找回密码", size=(100, 24), font=Fonts.sizedFont(Fonts.UniversalPlainFont, 15))
+        self.regAccountButton       = Button("注册账户", size=(100, 24), font=Fonts.sizedFont(Fonts.UniversalPlainFont, 15))
+        self.loginAccountButton     = Button("登录账户", size=(100, 24), font=Fonts.sizedFont(Fonts.UniversalPlainFont, 15))
         for btn in (self.pwdFoundButtonLogin, self.pwdFoundButtonRegister,
                     self.regAccountButton, self.loginAccountButton):
             btn.setObjectName("smallBtn")
@@ -253,16 +256,16 @@ class LoginWindow(QWidget):
         self.mainLayout = ClassicLayout.Vertical(constr=ClassicLayout.Default,
                                                  margins=ClassicLayout.NoBorder, spacing=0)
 
-        # 登录界面底部小按钮行
+        # 登录界面底部小按钮行 pwdFoundAndReg
         pnrLayout = ClassicLayout.Horizontal(constr=ClassicLayout.MinMax,
-                                             margins=(80, 0, 80, 0), spacing=0)
+                                             margins=(80, 10, 80, 0), spacing=0)
         pnrLayout.addWidget(self.pwdFoundButtonLogin, 0, alignment=Qt.AlignmentFlag.AlignLeft)
         pnrLayout.addStretch(1)
         pnrLayout.addWidget(self.regAccountButton, 0, alignment=Qt.AlignmentFlag.AlignRight)
 
         # 注册界面底部小按钮行
         pnlLayout = ClassicLayout.Horizontal(constr=ClassicLayout.MinMax,
-                                             margins=(80, 0, 80, 0), spacing=0)
+                                             margins=(80, 10, 80, 0), spacing=0)
         pnlLayout.addWidget(self.pwdFoundButtonRegister, 0, alignment=Qt.AlignmentFlag.AlignLeft)
         pnlLayout.addStretch(1)
         pnlLayout.addWidget(self.loginAccountButton, 0, alignment=Qt.AlignmentFlag.AlignRight)
@@ -274,17 +277,17 @@ class LoginWindow(QWidget):
         loginLayout.addLayout(self.pwdInputer, 0)
         loginLayout.addLayout(pnrLayout, 0)
         loginLayout.addStretch(1)
-        loginLayout.addWidget(self.loginButton, 0, alignment=ClassicLayout.CBottom)
+        loginLayout.addWidget(self.loginButton, 10, alignment=ClassicLayout.CBottom)
 
         # 注册界面布局
         registerLayout = ClassicLayout.Vertical(align=ClassicLayout.CTop, constr=ClassicLayout.MinMax,
-                                                margins=(80, 30, 80, 20), spacing=10)
+                                                margins=(80, 40, 80, 30), spacing=12)
         registerLayout.addLayout(self.nicknameInputer, 0)
-        registerLayout.addLayout(self.pwdInputer, 0)
+        registerLayout.addLayout(self.pwdInputer2, 0)
         registerLayout.addLayout(self.pwdVerification, 0)
         registerLayout.addLayout(pnlLayout, 0)
         registerLayout.addStretch(1)
-        registerLayout.addWidget(self.registerButton, 0, alignment=ClassicLayout.CBottom)
+        registerLayout.addWidget(self.registerButton, 10, alignment=ClassicLayout.CBottom)
 
         self.loginWindow.setLayout(loginLayout)
         self.registerWindow.setLayout(registerLayout)
@@ -340,7 +343,7 @@ class LoginWindow(QWidget):
 
     def _validate_register(self) -> tuple[bool, dict]:
         nick_text = self.nicknameInputer.getInput().strip()
-        pwd_text  = self.pwdInputer.getInput().strip()
+        pwd_text  = self.pwdInputer2.getInput().strip()
         pwd2_text = self.pwdVerification.getInput().strip()
 
         # 昵称验证（注册时只允许昵称，不允许纯数字）

@@ -47,7 +47,7 @@ class TextInput(QHBoxLayout):
     Hidden = 0
     Displayed = 1
 
-    def __init__(self, text: str, phText: str = '', mode: int = 1, size: Tuple[int, int] = (400, 40) , font: QFont = Fonts.UniversalPlainFont):
+    def __init__(self, text: str, phText: str = '', mode: int = 1, size: Tuple[int, int] = (400, 40), font: QFont = Fonts.UniversalPlainFont, labelWidth: int = 0):
         '''
         创建QLabel和QLineEdit组件并应用至布局
 
@@ -69,7 +69,11 @@ class TextInput(QHBoxLayout):
         # 创建并设置标签组件
         qText = QLabel(text)
         qText.setFont(font)
-        qText.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        if labelWidth > 0:
+            qText.setFixedWidth(labelWidth)
+            qText.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        else:
+            qText.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
 
         # 创建并设置文本输入框组件
         qInput = QLineEdit()
