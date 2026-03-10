@@ -11,7 +11,7 @@ from PySide6.QtCore import Qt, QThread, Signal
 
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
 
-# ── 输入验证规则 ────────────────────────────────────────────────
+# ── 输入验证规则 ────────────────────────────────────────────────s
 MAX_LEN = 20
 
 _RE_UID      = re.compile(r'^\d+$')
