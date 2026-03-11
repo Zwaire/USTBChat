@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-from bin.state.models import Message
+import sys
+# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from ChatModels import Message
 
 # 本地数据根目录
 _DATA_ROOT = os.path.join(os.path.dirname(__file__), "..", "..", "data", "users")
