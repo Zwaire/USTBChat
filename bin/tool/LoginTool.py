@@ -1,6 +1,7 @@
 import re
 import os
 import hashlib
+from Message import LoginInfo
 
 MAX_LEN = 20
 _RE_UID      = re.compile(r'^\d+$')
@@ -10,8 +11,8 @@ _RE_PASSWORD = re.compile(r'^[A-Za-z0-9_/\.]+$')
 class LoginWindowTool:
     def __init__(self):
         pass
-
-    def _validate_id(self, text: str) -> str | bool:
+    @classmethod
+    def _validate_id(cls, text: str) -> str | bool:
         """
         检查输入的字符串是否符合账户ID或昵称的要求
         Args:
@@ -30,8 +31,9 @@ class LoginWindowTool:
         if not _RE_NICKNAME.match(text):
             return "昵称只能包含汉字、英文字母、数字、下划线"
         return True
-
-    def _validate_password(self, text: str) -> str | bool:
+    
+    @classmethod
+    def _validate_password(cls, text: str) -> str | bool:
         '''
         检查输入的字符串是否符合密码的要求
         '''
@@ -42,8 +44,9 @@ class LoginWindowTool:
         if not _RE_PASSWORD.match(text):
             return "密码只能包含英文字母、数字、下划线、斜杠、英文句点"
         return True
-
-    def _is_uid(self, text: str) -> bool:
+    
+    @classmethod
+    def _is_uid(cls,text: str) -> bool:
         return bool(_RE_UID.match(text))
     
     def _pwd_encryption(self, text: str) -> str:
@@ -78,23 +81,32 @@ class LoginWindowTool:
 
         return salt.hex() + '$' + dk.hex()
 
+    def _get_response(self, request: dict) -> dict:
+        '''
+        发送请求到服务器，并获取响应
+        Args:
+            request (dict): 待发送的请求数据，包含请求类型、用户名、IP等信息
+        Returns:
+            dict: 服务器返回的响应数据，包含是否成功、错误信息等
+        '''
+        # [WFT]
+        # <————————————————————————————————————>
+        # 需要将request 发送到服务器，并且得到服务器的响应
+        # <————————————————————————————————————>
+        response = {}  # 这里应该是从服务器接收到的响应数据
+        return response
+
     def _request_pwd_find(self, id: str) -> dict:
         ''' 向服务器发送请求，发送id进行查验 '''
         request = {
             "type": "request_pwd_find",
-            "username": id
+            "username": id,
+            "ip": LoginInfo._get_localip()
         }
+        response = self._get_response(request)
+        return response  
 
-# dict={
-# 	"type":["register","login","add_friend","create_group","add_group","message","group_message"]
-# 	"username": "wzx" #str
-# 	"code": "123"   #str
-# 	"ip": "127.0.0.1" #str
-# 	"friendname": "xjz" #str
-# 	"groupname": "group_1" #str
-# 	"message": "hello" #str
-# 	"groupmessage": "hello" #str
-# }
+
     def _request_pwd(self):
         '''
         找回密码按钮功能

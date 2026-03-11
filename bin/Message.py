@@ -31,7 +31,8 @@ class LoginInfo:
         self.Password = password
         self.IP = self._get_localip()
 
-    def _get_localip(self) -> str:
+    @classmethod
+    def _get_localip(cls) -> str:
         ''' 获得本机的 IP 地址  '''
         s = None
         try:
