@@ -196,7 +196,8 @@ class LoginWindow(QWidget):
             return
 
         # 获取ID, 向服务器发送找回密码请求
-        # [NTC]
+        # [CPD]
+        # 添加_request_pwd_find(id: str)->dict:函数接口，返回服务器的地址，目前正在等待传送实现
         # <————————————————————————————————————>
         # requestPasswordRetrieve(id: str) -> AnyType:
         # 发送密码找回请求, 返回值是服务器的返回消息
