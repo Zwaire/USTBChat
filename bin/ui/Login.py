@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from pathlib import Path
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QLineEdit,
-                               QStackedLayout)
+                               QStackedLayout, QMessageBox)
 from PySide6.QtCore import Qt
 
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
@@ -157,6 +157,9 @@ class LoginWindow(QWidget):
         self.loginAccountButton.clicked.connect(lambda checked: self.switchToLogin())
 
     def packLoginInfo(self) -> LoginInfo:
+        '''
+        打包当前界面用户输入的所有信息, 结果因
+        '''
 
         mode = self.switchLayout.currentIndex()
         
@@ -171,6 +174,73 @@ class LoginWindow(QWidget):
             password = self.pwdInputerRegister.getInput()
         
         return LoginInfo(mode, id, password)
+
+    def loginAccount(self):
+        '''
+        点击登录按钮后的操作
+        包括信息打包、输入验证、错误警告、密码加密、信息发送和服务器信息处理
+        '''
+
+        # 打包用户输入的信息
+        info = self.packLoginInfo()
+
+        # 检查输入信息是否合法
+        # <——————————————————————————————————————————————>
+        # isValid(info: LoginInfo) -> bool:
+        # LoginInfo类含有三个属性: Mode, ID, Password
+        # Mode有0(代表登录), 1(代表注册)
+        # 首先登录模式下ID可为UID或昵称
+        # 注册模式下ID仅可为昵称, 昵称不能由纯数字组成(防止与UID混淆)
+        # 检测密码格式是否合格
+        # 返回一个布尔值, 表示输入信息是否有效
+        # <——————————————————————————————————————————————>
+
+
+        # 向服务器发送登录信息
+        # <——————————————————————————————————————————————>
+        # sendInfoToServer(info: LoginInfo) -> AnyType:
+        # 提取LoginInfo类中的信息
+        # 对密码进行加密
+        # 将信息组合成可通过TCP传输的格式
+        # 连接服务器, 发送信息
+        # 接收服务器返回的消息
+        # 返回值即服务器返回的消息， 若发送失败则返回False
+        # <——————————————————————————————————————————————>
+
+        # 服务器信息处理
+
+
+    def registerAccount(self):
+        '''
+        点击登录按钮后的操作
+        包括信息打包、输入验证、错误警告和信息发送
+        '''
+
+        # 打包用户输入的信息
+        info = self.packLoginInfo()
+
+        # 检查输入信息是否合法
+        # isValid()
+
+        # 向服务器发送登录信息
+        # sendInfoToServer()
+
+    def warning(self, text: str):
+        '''
+        输出警告信息
+
+        Args:
+            text(str): 警告信息内容
+
+        Returns:
+            None
+        
+        Raises:
+            None
+        '''
+
+        QMessageBox.warning(self, "", text)
+        return
 
     def switchToRegister(self):
         self.switchLayout.setCurrentIndex(1)
