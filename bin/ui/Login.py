@@ -121,6 +121,13 @@ class ServerDialog(QDialog):
                 font-weight: bold;
             }
             QPushButton:hover { background: #b4befe; }
+            QMessageBox { background-color: #1e1e2e; color: #cdd6f4; }
+            QMessageBox QLabel { color: #cdd6f4; }
+            QMessageBox QPushButton {
+                background: #89b4fa; color: #1e1e2e; border-radius: 6px;
+                font-weight: bold; min-width: 80px; min-height: 30px;
+            }
+            QMessageBox QPushButton:hover { background: #b4befe; }
         """)
 
     def _on_confirm(self):
@@ -141,14 +148,6 @@ class ServerDialog(QDialog):
 class LoginWindow(QWidget):
     '''
     登录窗口, 继承自QWidget
-
-    * 外观
-    有登录和注册两种界面
-    登录界面包含UID或昵称输入框和密码输入框
-    注册界面包含昵称输入框、密码输入框和确认密码输入框
-    包含登录注册模式切换按钮
-    包含登录确认或注册确认按钮
-
     * 功能
     点击登录或注册按钮时按顺序执行以下操作:
     1. 获取所有输入框的内容并验证符号合法性(禁止非法字符、输入长度限制、字符种类要求)
@@ -211,6 +210,13 @@ class LoginWindow(QWidget):
                 text-decoration: underline;
             }
             QPushButton#smallBtn:hover { color: #b4befe; }
+            QMessageBox { background-color: #1e1e2e; color: #cdd6f4; }
+            QMessageBox QLabel { color: #cdd6f4; }
+            QMessageBox QPushButton {
+                background: #89b4fa; color: #1e1e2e; border-radius: 6px;
+                font-weight: bold; min-width: 80px; min-height: 30px;
+            }
+            QMessageBox QPushButton:hover { background: #b4befe; }
         """)
 
     # ── 初始化 ────────────────────────────────────────────────
@@ -320,6 +326,8 @@ class LoginWindow(QWidget):
             self._server_port = dlg.port
             return True
         return False
+
+    # def _GetpwdLock(self, )
 
     # ── 验证 ──────────────────────────────────────────────────
     def _validate_login(self) -> tuple[bool, dict]:
