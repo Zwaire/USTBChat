@@ -255,3 +255,82 @@ def find_group_ip(name):
             return ip
     else:
         return None
+    
+def get_history_message_private(user_name, friend_name):
+
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1",
+        database="chat"
+    )
+
+    cursor = db.cursor()
+
+    user_id = find(user_name, "users")
+    friend_id = find(friend_name, "users")
+
+    sql = """
+    SELECT m.message, m.time, u.name
+    FROM messages m
+    JOIN users u ON m.send_id = u.user_id
+    WHERE (m.send_id=%s AND m.recive_id=%s)
+       OR (m.send_id=%s AND m.recive_id=%s)
+    ORDER BY m.time DESC, m.id DESC
+    LIMIT 50
+    """
+
+    cursor.execute(sql, (user_id, friend_id, friend_id, user_id))
+
+    results = cursor.fetchall()
+
+    messages = []
+
+    for row in results:
+        messages.append({
+            "send_name": row[2],
+            "message": row[0],
+            "time": row[1]
+        })
+
+    return messages
+
+def get_history_message_public(group_name):
+
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1",
+        database="chat"
+    )
+
+    cursor = db.cursor()
+
+    group_id = find(group_name,"groups_list")
+
+    sql = """
+    SELECT u.name, gm.message, gm.time
+    FROM group_messages gm
+    JOIN users u ON gm.send_id = u.user_id
+    WHERE gm.group_id = %s
+    ORDER BY gm.time DESC, gm.id DESC
+    LIMIT 50
+    """
+
+    cursor.execute(sql, (group_id,))
+
+    results = cursor.fetchall()
+
+    messages = []
+
+    for row in results:
+        messages.append({
+            "send_name": row[0],
+            "message": row[1],
+            "time": row[2]
+        })
+
+    cursor.close()
+    db.close()
+
+    return messages
