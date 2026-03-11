@@ -6,7 +6,8 @@
 '''
 
 from typing import Tuple
-from PySide6.QtWidgets import (QLayout, QHBoxLayout, QVBoxLayout, QWidget, QPushButton, QLabel, QSizePolicy, QLineEdit)
+from PySide6.QtWidgets import (QLayout, QHBoxLayout, QVBoxLayout, QWidget, QPushButton, QLabel, QSizePolicy, QLineEdit,
+                               QFrame)
 from PySide6.QtGui import QFont
 from PySide6.QtCore import Qt
 
@@ -125,6 +126,31 @@ class Button(QPushButton):
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setFixedSize(size[0], size[1])
 
+class Section(QWidget):
+    '''
+    一个专门用于承载布局的空白组件, 用于在多布局的复杂情况中把布局换位组件, 减少排版复杂度
+    '''
+
+    Fixed = (QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+    Limited = (QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+    HExtendable = (QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+    VExtendable = (QSizePolicy.Policy.Fixed, QSizePolicy.Policy.MinimumExpanding)
+    Extendable = (QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+
+    def __init__(self, size: Tuple[int, int] = (400, 400),
+                 policy:  Tuple[QSizePolicy.Policy, QSizePolicy.Policy] = (QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)):
+        super().__init__()
+
+        self.setSizePolicy(policy[0], policy[1])
+        self.setMinimumSize(size[0], size[1])
+
+        if policy == self.Fixed:
+            self.setFixedSize(size[0], size[1])
+        elif policy == self.HExtendable:
+            self.setFixedHeight(size[1])
+        elif policy == self.VExtendable:
+            self.setFixedWidth(size[0])
+
 class ClassicLayout():
     '''
     经典布局
@@ -142,6 +168,7 @@ class ClassicLayout():
     CBottom = Bottom | HCenter
     CLeft = Left | VCenter
     CRight = Right | VCenter
+    LTop = Left | Top
 
     # 常用约束
     Default = QLayout.SizeConstraint.SetDefaultConstraint
@@ -212,3 +239,41 @@ class ClassicLayout():
             self.setContentsMargins(margins[0], margins[1], margins[2], margins[3])
             self.setSpacing(spacing)
 
+class Separator(QFrame):
+    '''
+    用于在布局内生成分隔符
+    '''
+
+    # 方向
+    Vertical = QFrame.Shape.VLine
+    Horizontal = QFrame.Shape.HLine
+
+    # 阴影
+    Sunken = QFrame.Shadow.Sunken
+
+    # 样式
+    LightDark = "background-color: #3f3f3f;"
+
+    def __init__(self, direct: QFrame.Shape = Horizontal, width: int = 3, shadow: QFrame.Shadow = Sunken, style: str = LightDark):
+        '''
+        设置分隔符属性
+
+        Args:
+            direct(QFrame.Shape): 分隔符方向, 垂直或水平
+            width(int): 分隔符的粗细
+            shadow(QFrame.Shadow): 分隔符阴影类型
+            style(str): 分隔符的样式表
+        
+        Returns:
+            None or Self
+        
+        Raises:
+            当输入的direct参数非两种预设时抛出ValueError错误
+        '''
+
+        super().__init__()
+
+        self.setFrameShape(direct)
+        self.setFrameShadow(shadow)
+        self.setFixedHeight(width)
+        self.setStyleSheet(style)
