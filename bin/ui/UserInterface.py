@@ -83,12 +83,16 @@ class MainWindow(QWidget):
 
         self.creLeftWidgets()
         self.creMidWidgets()
+        self.creRightWidgets()
         self.applyLeftLayout()
         self.applyMidLayout()
+        self.applyRightLayout()
 
         self.mainLayout.addWidget(self.leftSideBarSection, 0)
         self.mainLayout.addWidget(Separator(Separator.Vertical, width=1))
         self.mainLayout.addWidget(self.middleArea, 0)
+        self.mainLayout.addWidget(Separator(Separator.Vertical, width=1))
+        self.mainLayout.addWidget(self.rightSideBarSection, 0)
         self.setLayout(self.mainLayout)
 
     def creLeftWidgets(self):
@@ -110,7 +114,7 @@ class MainWindow(QWidget):
         self.partiesButton = Button("P", "群聊", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
 
         # 消息列表区域
-        self.newsListSection = Section((200, 600), Section.VExtendable)
+        self.newsListSection = Section((200, 538), Section.VExtendable)
         # 从本地读取已经存在的消息列表
         # <————————————————————————————————>
         # [NTC]
@@ -130,35 +134,19 @@ class MainWindow(QWidget):
         # 消息发送按钮
         self.messageSendButton = Button("发送", '', (90, 30), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
     
-    def applyMidLayout(self):
+    def creRightWidgets(self):
         '''
-        创建中间区域的布局
+        创建右边区域的组件
         '''
 
-        # 消息展示区域
-        self.messageDisplaySection = Section((600, 480), Section.Extendable)
+        # 群聊名称
+        self.partyName = QLabel("Party Name")
+        self.partyName.setFont(Fonts.UniversalPlainFont)
+        self.partyUID = QLabel("PUID: 123456")
+        self.partyUID.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
 
-        # 消息输入区域
-        self.messageInputSection = Section((600, 150), Section.Extendable)
-        self.messageInputLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.Max, ClassicLayout.NoBorder, 0)
-        self.messageInputLayout.addWidget(self.messageInputer, 1)
-        self.messageInputSection.setLayout(self.messageInputLayout)
-
-        # 消息发送按钮区域
-        self.messageSendButtonSection = Section((600, 50), Section.HExtendable)
-        self.messageSendButtonLayout = ClassicLayout.Horizontal(ClassicLayout.CRight, ClassicLayout.Default, (20, 0, 20, 20), 0)
-        self.messageSendButtonLayout.addStretch(1)
-        self.messageSendButtonLayout.addWidget(self.messageSendButton, 0, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
-        self.messageSendButtonSection.setLayout(self.messageSendButtonLayout)
-
-        # 整个中间区域
-        self.middleArea = Section((600, 680), Section.Extendable)
-        self.middleLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
-        self.middleLayout.addWidget(self.messageDisplaySection, 1)
-        self.middleLayout.addWidget(Separator(width=1))
-        self.middleLayout.addWidget(self.messageInputSection, 1)
-        self.middleLayout.addWidget(self.messageSendButtonSection, 0)
-        self.middleArea.setLayout(self.middleLayout)
+        # 群聊信息区域
+        self.partyInfoSection = Section((200, 60), Section.Fixed)
 
     def applyLeftLayout(self):
         '''
@@ -188,7 +176,7 @@ class MainWindow(QWidget):
         self.newsListSection.setLayout(self.newsListLayout)
 
         # 整个左边栏区域
-        self.leftSideBarSection = Section((200, 680), Section.VExtendable)
+        self.leftSideBarSection = Section((200, 618), Section.VExtendable)
         self.leftSideBarLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
         self.leftSideBarLayout.addWidget(self.personalInfoSection, 0)
         self.leftSideBarLayout.addWidget(Separator(width=1), 0)
@@ -196,6 +184,59 @@ class MainWindow(QWidget):
         self.leftSideBarLayout.addWidget(Separator(width=1), 0)
         self.leftSideBarLayout.addWidget(self.newsListSection, 1)
         self.leftSideBarSection.setLayout(self.leftSideBarLayout)
+
+    def applyMidLayout(self):
+        '''
+        创建中间区域的布局
+        '''
+
+        # 消息展示区域
+        self.messageDisplaySection = Section((800, 418), Section.Extendable)
+
+        # 消息输入区域
+        self.messageInputSection = Section((800, 150), Section.Extendable)
+        self.messageInputLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.Max, ClassicLayout.NoBorder, 0)
+        self.messageInputLayout.addWidget(self.messageInputer, 1)
+        self.messageInputSection.setLayout(self.messageInputLayout)
+
+        # 消息发送按钮区域
+        self.messageSendButtonSection = Section((800, 50), Section.HExtendable)
+        self.messageSendButtonLayout = ClassicLayout.Horizontal(ClassicLayout.CRight, ClassicLayout.Default, (20, 0, 20, 20), 0)
+        self.messageSendButtonLayout.addStretch(1)
+        self.messageSendButtonLayout.addWidget(self.messageSendButton, 0, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
+        self.messageSendButtonSection.setLayout(self.messageSendButtonLayout)
+
+        # 整个中间区域
+        self.middleArea = Section((800, 680), Section.Extendable)
+        self.middleLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
+        self.middleLayout.addWidget(self.messageDisplaySection, 1)
+        self.middleLayout.addWidget(Separator(width=1))
+        self.middleLayout.addWidget(self.messageInputSection, 1)
+        self.middleLayout.addWidget(self.messageSendButtonSection, 0)
+        self.middleArea.setLayout(self.middleLayout)
+
+    def applyRightLayout(self):
+        '''
+        创建并设置右边区域的布局
+        '''
+
+        # 群信息显示栏
+        self.partyInfoLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.Default, (20, 5, 20, 5), 5)
+        self.partyInfoLayout.addWidget(self.partyName, 1)
+        self.partyInfoLayout.addWidget(self.partyUID, 1)
+        self.partyInfoSection.setLayout(self.partyInfoLayout)
+
+        # 群成员显示区域
+        self.partyMemberSection = Section((200, 550), Section.Fixed)
+
+        # 右边栏区域
+        self.rightSideBarSection = Section((200, 618), Section.VExtendable)
+        self.rightSideBarLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
+        self.rightSideBarLayout.addWidget(self.partyInfoSection, 0)
+        self.rightSideBarLayout.addWidget(Separator(width=1))
+        self.rightSideBarLayout.addWidget(self.partyMemberSection, 0)
+        self.rightSideBarSection.setLayout(self.rightSideBarLayout)
+        
 
 if __name__ == '__main__':
     MMApp = QApplication(sys.argv)
