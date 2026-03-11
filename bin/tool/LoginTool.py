@@ -8,10 +8,9 @@ _RE_NICKNAME = re.compile(r'^[\u4e00-\u9fa5A-Za-z0-9_]+$')
 _RE_PASSWORD = re.compile(r'^[A-Za-z0-9_/\.]+$')
 
 class LoginWindowTool:
-    def __init__(self):
-        pass
 
-    def _validate_id(self, text: str) -> str | bool:
+    @classmethod
+    def _validate_id(cls, text: str) -> str | bool:
         """
         检查输入的字符串是否符合账户ID或昵称的要求
         Args:
@@ -31,7 +30,8 @@ class LoginWindowTool:
             return "昵称只能包含汉字、英文字母、数字、下划线"
         return True
 
-    def _validate_password(self, text: str) -> str | bool:
+    @classmethod
+    def _validate_password(cls, text: str) -> str | bool:
         '''
         检查输入的字符串是否符合密码的要求
         '''
@@ -43,10 +43,12 @@ class LoginWindowTool:
             return "密码只能包含英文字母、数字、下划线、斜杠、英文句点"
         return True
 
-    def _is_uid(self, text: str) -> bool:
+    @classmethod
+    def _is_uid(cls, text: str) -> bool:
         return bool(_RE_UID.match(text))
     
-    def _pwd_encryption(self, text: str) -> str:
+    @classmethod
+    def _pwd_encryption(cls, text: str) -> str:
         """
         对密码进行派生哈希处理并返回字符串结果。
         Args:
@@ -78,7 +80,8 @@ class LoginWindowTool:
 
         return salt.hex() + '$' + dk.hex()
 
-    def _request_pwd_find(self, id: str) -> dict:
+    @classmethod
+    def _request_pwd_find(cls, id: str) -> dict:
         ''' 向服务器发送请求，发送id进行查验 '''
         request = {
             "type": "request_pwd_find",
