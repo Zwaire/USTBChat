@@ -132,7 +132,6 @@ class LoginWindowTool:
             "type": "login",
             "mode": getattr(info, 'Mode', 0),
             "username": getattr(info, 'ID', ''),
-            "salt": salt_hex,
             "hash": dk_hex,
             "ip": LoginInfo._get_localip()
         }

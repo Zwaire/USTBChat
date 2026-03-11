@@ -36,8 +36,9 @@ class Fonts:
             None
         '''
 
-        font.setPointSize(size)
-        return font
+        copiedFont = QFont(font)
+        copiedFont.setPointSize(size)
+        return copiedFont
 
 class TextInput(QHBoxLayout):
     '''
@@ -120,7 +121,7 @@ class Button(QPushButton):
         '''
         super().__init__()
 
-        self.setFont(Fonts.UniversalPlainFont)
+        self.setFont(font)
         self.setText(text)
         self.setToolTip(tip)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -275,5 +276,14 @@ class Separator(QFrame):
 
         self.setFrameShape(direct)
         self.setFrameShadow(shadow)
-        self.setFixedHeight(width)
         self.setStyleSheet(style)
+
+        if direct == self.Vertical:
+            self.setFixedWidth(width)
+        
+        elif direct == self.Horizontal:
+            self.setFixedHeight(width)
+        
+        else:
+            raise ValueError("超出预期的方向")
+
