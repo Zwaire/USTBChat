@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt, Slot
 
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
 from bin.Message import LoginInfo
+from bin.tool.LoginTool import LoginWindowTool as tool
 
 class LoginWindow(QWidget):
     '''
@@ -155,6 +156,10 @@ class LoginWindow(QWidget):
     def slotsConnect(self):
         self.regAccountButton.clicked.connect(lambda checked: self.switchToRegister())
         self.loginAccountButton.clicked.connect(lambda checked: self.switchToLogin())
+        self.pwdFoundButtonLogin.clicked.connect(lambda checked: self.findPassword())
+        self.pwdFoundButtonRegister.clicked.connect(lambda checked: self.findPassword())
+        self.loginButton.clicked.connect(lambda checked: self.loginAccount())
+        self.registerButton.clicked.connect(lambda checked: self.registerAccount())
 
     def packLoginInfo(self) -> LoginInfo:
         '''
@@ -182,7 +187,13 @@ class LoginWindow(QWidget):
         '''
 
         # 检查账号输入格式是否正确
-        # isValid()
+        account = self.idInputerLogin.getInput() if self.switchLayout.currentIndex() == 0 else self.idInputerRegister.getInput()
+        result = tool._validate_id(account)
+
+        if result != True:
+            #格式不正确, 警告
+            self.warning(str(result))
+            return
 
         # 获取ID, 向服务器发送找回密码请求
         # [NTC]
@@ -205,18 +216,16 @@ class LoginWindow(QWidget):
         info = self.packLoginInfo()
 
         # 检查输入信息是否合法
-        # [NTC]
-        # <——————————————————————————————————————————————>
-        # isValid(info: LoginInfo) -> bool:
-        # LoginInfo类含有三个属性: Mode, ID, Password
-        # Mode有0(代表登录), 1(代表注册)
-        # 首先登录模式下ID可为UID或昵称
-        # 注册模式下ID仅可为昵称, 昵称不能由纯数字组成(防止与UID混淆)
-        # 检测密码格式是否合格
-        # 返回一个布尔值, 表示输入信息是否有效
-        # <——————————————————————————————————————————————>
-
-
+        result = tool._validate_id(info.ID)
+        if result != True:
+            self.warning(str(result))
+            return False
+        
+        result = tool._validate_password(info.Password)
+        if result != True:
+            self.warning(str(result))
+            return False
+        
         # 向服务器发送登录信息
         # [NTC]
         # <——————————————————————————————————————————————>
@@ -252,7 +261,18 @@ class LoginWindow(QWidget):
         info = self.packLoginInfo()
 
         # 检查输入信息是否合法
-        # isValid()
+        result = tool._validate_id(info.ID)
+        if result != True:
+            self.warning(str(result))
+            return
+        
+        if tool._is_uid(info.ID):
+            self.warning("昵称不可为全数字")
+            return
+        
+        result = tool._validate_password(info.Password)
+        if result != True:
+            self.warning(str(result))
 
         # 向服务器发送登录信息
         # sendInfoToServer()
