@@ -1,0 +1,4 @@
+https://dev.mysql.com/downloads/workbench/
+选择linux ubuntu以及对应版本下载deb安装软件
+https://blog.csdn.net/weixin_45626288/article/details/133220238
+下载教程
