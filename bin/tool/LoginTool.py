@@ -49,7 +49,8 @@ class LoginWindowTool:
     def _is_uid(cls,text: str) -> bool:
         return bool(_RE_UID.match(text))
     
-    def _pwd_encryption(self, text: str) -> str:
+    @classmethod
+    def _pwd_encryption(cls, text: str) -> str:
         """
         对密码进行派生哈希处理并返回字符串结果。
         Args:
