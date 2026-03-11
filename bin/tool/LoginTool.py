@@ -3,7 +3,7 @@ import os
 import hashlib
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from bin.Message import LoginInfo
+from bin.MessageFormat import LoginInfo
 
 
 MAX_LEN = 20

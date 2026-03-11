@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBox
 from PySide6.QtCore import Qt, Slot
 
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
-from bin.Message import LoginInfo
+from bin.MessageFormat import LoginInfo
 from bin.tool.LoginTool import LoginWindowTool as tool
 
 class LoginWindow(QWidget):
