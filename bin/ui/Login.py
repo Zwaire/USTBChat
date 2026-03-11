@@ -228,7 +228,8 @@ class LoginWindow(QWidget):
             return False
         
         # 向服务器发送登录信息
-        # [NTC]
+        # [CPD]
+        # 添加了_send_login_info(info: LoginInfo) -> dict|bool函数接口，返回服务器的响应，目前正在等待传送实现，返回的是服务器的字典
         # <——————————————————————————————————————————————>
         # sendInfoToServer(info: LoginInfo) -> AnyType:
         # 提取LoginInfo类中的信息

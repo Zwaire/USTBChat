@@ -1,7 +1,10 @@
 import re
 import os
 import hashlib
-from Message import LoginInfo
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from bin.Message import LoginInfo
+
 
 MAX_LEN = 20
 _RE_UID      = re.compile(r'^\d+$')
@@ -107,52 +110,35 @@ class LoginWindowTool:
         response = self._get_response(request)
         return response  
 
-
-    def _request_pwd(self):
+    def _send_login_info(self, info: LoginInfo) -> dict | bool:
+        ''' 
+        向服务器发送登录信息，错误会返回名为"error"的键，成功则返回服务器响应的字典
         '''
-        找回密码按钮功能
-        '''
+        _pwd = info.Password
 
-        # 检查账号输入格式是否正确
-        # isValid()
+        # 对密码进行客户端派生加密（返回格式为 "salt$derived_key"）
+        encrypted = self._pwd_encryption(_pwd)
+        if not encrypted:
+            return {"error": "empty password"}
 
-        # 获取ID, 向服务器发送找回密码请求
-        # [NTC]
-        # <————————————————————————————————————>
-        # requestPasswordRetrieve(id: str) -> AnyType:
-        # 发送密码找回请求, 返回值是服务器的返回消息
-        # <————————————————————————————————————>
-    
-    def _login_ccount(self):
-        '''
-        点击登录按钮后的操作
-        包括信息打包、输入验证、错误警告、密码加密、信息发送和服务器信息处理
-        '''
+        # 尝试拆分 salt 和 hash
+        if '$' in encrypted:
+            salt_hex, dk_hex = encrypted.split('$', 1)
+        else:
+            return {"error": "password error"}
 
-        # 打包用户输入的信息
-        # info = self.packLoginInfo()
+        # 构建发送到服务器的请求体
+        request = {
+            "type": "login",
+            "mode": getattr(info, 'Mode', 0),
+            "username": getattr(info, 'ID', ''),
+            "salt": salt_hex,
+            "hash": dk_hex,
+            "ip": LoginInfo._get_localip()
+        }
 
-        # 检查输入信息是否合法
-        # <——————————————————————————————————————————————>
-        # isValid(info: LoginInfo) -> bool:
-        # LoginInfo类含有三个属性: Mode, ID, Password
-        # Mode有0(代表登录), 1(代表注册)
-        # 首先登录模式下ID可为UID或昵称
-        # 注册模式下ID仅可为昵称, 昵称不能由纯数字组成(防止与UID混淆)
-        # 检测密码格式是否合格
-        # 返回一个布尔值, 表示输入信息是否有效
-        # <——————————————————————————————————————————————>
-
-
-        # 向服务器发送登录信息
-        # <——————————————————————————————————————————————>
-        # sendInfoToServer(info: LoginInfo) -> AnyType:
-        # 提取LoginInfo类中的信息
-        # 对密码进行加密
-        # 将信息组合成可通过TCP传输的格式
-        # 连接服务器, 发送信息
-        # 接收服务器返回的消息
-        # 返回值即服务器返回的消息， 若发送失败则返回False
-        # <——————————————————————————————————————————————>
-
-        # 服务器信息处理
+        response = self._get_response(request)
+        if not response:
+            return {"error": "no response from server"}
+        else:
+            return response
