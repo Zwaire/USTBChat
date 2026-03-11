@@ -11,7 +11,7 @@ class LoginWindowTool:
     def __init__(self):
         pass
 
-    def _validate_id(text: str) -> str | bool:
+    def _validate_id(self, text: str) -> str | bool:
         """
         检查输入的字符串是否符合账户ID或昵称的要求
         Args:
@@ -31,7 +31,7 @@ class LoginWindowTool:
             return "昵称只能包含汉字、英文字母、数字、下划线"
         return True
 
-    def _validate_password(text: str) -> str | bool:
+    def _validate_password(self, text: str) -> str | bool:
         '''
         检查输入的字符串是否符合密码的要求
         '''
@@ -43,10 +43,10 @@ class LoginWindowTool:
             return "密码只能包含英文字母、数字、下划线、斜杠、英文句点"
         return True
 
-    def _is_uid(text: str) -> bool:
+    def _is_uid(self, text: str) -> bool:
         return bool(_RE_UID.match(text))
     
-    def _pwd_encryption(text: str) -> str:
+    def _pwd_encryption(self, text: str) -> str:
         """
         对密码进行派生哈希处理并返回字符串结果。
         Args:
@@ -59,11 +59,10 @@ class LoginWindowTool:
         derived_key 是派生的密钥，基于输入的密码、盐和一个固定的 pepper 进行计算。
         在登录的时候验证利用服务器存储的 salt 和相同的 pepper 
         """
-
-        if text is None:
+        if not text:
                 return ""
 
-        # 客户端固定的 pepper（可选），应通过安全配置注入环境变量以便更换
+        # 客户端固定的 pepper，应通过安全配置注入环境变量以便更换
         PEPPER = os.environ.get("USTBCHAT_PWD_PEPPER", "USTBChat_Default_Pepper_ChangeMe")
 
         # 随机盐，注册时应保存到服务器；登录时需与服务器协商使用相同盐
@@ -79,7 +78,24 @@ class LoginWindowTool:
 
         return salt.hex() + '$' + dk.hex()
 
-    def findPassword(self):
+    def _request_pwd_find(self, id: str) -> dict:
+        ''' 向服务器发送请求，发送id进行查验 '''
+        request = {
+            "type": "request_pwd_find",
+            "username": id
+        }
+
+# dict={
+# 	"type":["register","login","add_friend","create_group","add_group","message","group_message"]
+# 	"username": "wzx" #str
+# 	"code": "123"   #str
+# 	"ip": "127.0.0.1" #str
+# 	"friendname": "xjz" #str
+# 	"groupname": "group_1" #str
+# 	"message": "hello" #str
+# 	"groupmessage": "hello" #str
+# }
+    def _request_pwd(self):
         '''
         找回密码按钮功能
         '''
@@ -101,7 +117,7 @@ class LoginWindowTool:
         '''
 
         # 打包用户输入的信息
-        info = self.packLoginInfo()
+        # info = self.packLoginInfo()
 
         # 检查输入信息是否合法
         # <——————————————————————————————————————————————>
