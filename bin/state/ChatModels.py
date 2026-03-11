@@ -4,6 +4,14 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Message:
+    '''
+    Message类表示一条消息，包含发送者信息、内容、时间等属性，如下所示
+    sender_uid: str       # 发送者的用户ID，字符串类型
+    sender_nickname: str  # 发送者的昵称，字符串类型
+    content: str         # 消息内容，字符串类型
+    time: str            # 消息发送时间，字符串类型，格式由服务器决定
+    is_self: bool        # 是否是自己发的消息，布尔类型
+    '''
     sender_uid: str
     sender_nickname: str
     content: str
