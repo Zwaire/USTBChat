@@ -3,7 +3,7 @@ import json
 import os
 import sys
 # sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from ChatModels import Message
+from ChatModels import Message, Contact, ChatTool
 
 # 本地数据根目录
 _DATA_ROOT = os.path.join(os.path.dirname(__file__), "..", "..", "data", "users")
@@ -25,7 +25,7 @@ def load_history(uid: str, target_id: str) -> list[Message]:
     if not os.path.exists(path):
         return []
     with open(path, "r", encoding="utf-8") as f:
-        return [Message.dict_to_message(d) for d in json.load(f)]
+        return [ChatTool.dict_to_message(d) for d in json.load(f)]
 
 
 def append_message(uid: str, target_id: str, msg: Message):
@@ -40,7 +40,7 @@ def append_message(uid: str, target_id: str, msg: Message):
     else:
         data = []
 
-    data.append(msg.message_to_dict())
+    data.append(ChatTool.message_to_dict(msg))
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
