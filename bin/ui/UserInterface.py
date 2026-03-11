@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
-                               QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea)
+                               QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit)
 from PySide6.QtCore import Qt, Slot
 from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
 
@@ -82,9 +82,13 @@ class MainWindow(QWidget):
         self.mainLayout = ClassicLayout.Horizontal(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
 
         self.creLeftWidgets()
+        self.creMidWidgets()
         self.applyLeftLayout()
+        self.applyMidLayout()
 
         self.mainLayout.addWidget(self.leftSideBarSection, 0)
+        self.mainLayout.addWidget(Separator(Separator.Vertical, width=1))
+        self.mainLayout.addWidget(self.middleArea, 0)
         self.setLayout(self.mainLayout)
 
     def creLeftWidgets(self):
@@ -101,9 +105,9 @@ class MainWindow(QWidget):
 
         # 消息列表切换按钮栏
         self.switchButtonSection = Section((200, 20))
-        self.newsButton = Button("N", "最新消息", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
-        self.friendsButton = Button("F", "好友", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
-        self.partiesButton = Button("P", "群聊", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
+        self.newsButton = Button("N", "最新消息", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
+        self.friendsButton = Button("F", "好友", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
+        self.partiesButton = Button("P", "群聊", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
 
         # 消息列表区域
         self.newsListSection = Section((200, 600), Section.VExtendable)
@@ -112,6 +116,49 @@ class MainWindow(QWidget):
         # [NTC]
         # obtainLocalNewsList() -> Tuple[NewsBar, ...]
         # <————————————————————————————————>
+
+    def creMidWidgets(self):
+        '''
+        创建中间区域的组件
+        '''
+
+        # 消息输入框
+        self.messageInputer = QPlainTextEdit()
+        self.messageInputer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.messageInputer.setFont(Fonts.UniversalPlainFont)
+
+        # 消息发送按钮
+        self.messageSendButton = Button("发送", '', (90, 30), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+    
+    def applyMidLayout(self):
+        '''
+        创建中间区域的布局
+        '''
+
+        # 消息展示区域
+        self.messageDisplaySection = Section((600, 480), Section.Extendable)
+
+        # 消息输入区域
+        self.messageInputSection = Section((600, 150), Section.Extendable)
+        self.messageInputLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.Max, ClassicLayout.NoBorder, 0)
+        self.messageInputLayout.addWidget(self.messageInputer, 1)
+        self.messageInputSection.setLayout(self.messageInputLayout)
+
+        # 消息发送按钮区域
+        self.messageSendButtonSection = Section((600, 50), Section.HExtendable)
+        self.messageSendButtonLayout = ClassicLayout.Horizontal(ClassicLayout.CRight, ClassicLayout.Default, (20, 0, 20, 20), 0)
+        self.messageSendButtonLayout.addStretch(1)
+        self.messageSendButtonLayout.addWidget(self.messageSendButton, 0, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
+        self.messageSendButtonSection.setLayout(self.messageSendButtonLayout)
+
+        # 整个中间区域
+        self.middleArea = Section((600, 680), Section.Extendable)
+        self.middleLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
+        self.middleLayout.addWidget(self.messageDisplaySection, 1)
+        self.middleLayout.addWidget(Separator(width=1))
+        self.middleLayout.addWidget(self.messageInputSection, 1)
+        self.middleLayout.addWidget(self.messageSendButtonSection, 0)
+        self.middleArea.setLayout(self.middleLayout)
 
     def applyLeftLayout(self):
         '''
