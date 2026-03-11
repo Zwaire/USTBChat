@@ -185,11 +185,11 @@ class LoginWindow(QWidget):
         # isValid()
 
         # 获取ID, 向服务器发送找回密码请求
+        # [NTC]
         # <————————————————————————————————————>
         # requestPasswordRetrieve(id: str) -> AnyType:
         # 发送密码找回请求, 返回值是服务器的返回消息
         # <————————————————————————————————————>
-
 
     @Slot()
     def loginAccount(self) -> bool:
@@ -205,6 +205,7 @@ class LoginWindow(QWidget):
         info = self.packLoginInfo()
 
         # 检查输入信息是否合法
+        # [NTC]
         # <——————————————————————————————————————————————>
         # isValid(info: LoginInfo) -> bool:
         # LoginInfo类含有三个属性: Mode, ID, Password
@@ -217,6 +218,7 @@ class LoginWindow(QWidget):
 
 
         # 向服务器发送登录信息
+        # [NTC]
         # <——————————————————————————————————————————————>
         # sendInfoToServer(info: LoginInfo) -> AnyType:
         # 提取LoginInfo类中的信息
