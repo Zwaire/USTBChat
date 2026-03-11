@@ -33,6 +33,7 @@ class LoginInfo:
 
     def _get_localip(self) -> str:
         ''' 获得本机的 IP 地址  '''
+        s = None
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
@@ -41,4 +42,5 @@ class LoginInfo:
         except Exception as e:
             return "127.0.0.1"
         finally:
-            s.close()
+            if s is not None:
+                s.close()
