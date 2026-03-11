@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from pathlib import Path
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QLineEdit,
                                QStackedLayout, QMessageBox)
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Slot
 
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
 from bin.Message import LoginInfo
@@ -175,10 +175,30 @@ class LoginWindow(QWidget):
         
         return LoginInfo(mode, id, password)
 
-    def loginAccount(self):
+    @Slot()
+    def findPassword(self):
+        '''
+        找回密码按钮功能
+        '''
+
+        # 检查账号输入格式是否正确
+        # isValid()
+
+        # 获取ID, 向服务器发送找回密码请求
+        # <————————————————————————————————————>
+        # requestPasswordRetrieve(id: str) -> AnyType:
+        # 发送密码找回请求, 返回值是服务器的返回消息
+        # <————————————————————————————————————>
+
+
+    @Slot()
+    def loginAccount(self) -> bool:
         '''
         点击登录按钮后的操作
         包括信息打包、输入验证、错误警告、密码加密、信息发送和服务器信息处理
+
+        Returns:
+            bool: 是否登录成功
         '''
 
         # 打包用户输入的信息
@@ -208,13 +228,23 @@ class LoginWindow(QWidget):
         # <——————————————————————————————————————————————>
 
         # 服务器信息处理
+        return False
 
-
+    @Slot()
     def registerAccount(self):
         '''
         点击登录按钮后的操作
-        包括信息打包、输入验证、错误警告和信息发送
+        包括密码验证、信息打包、输入验证、错误警告、信息发送和服务器消息处理
         '''
+
+        # 检测两次输入的密码是否相同
+        pwdF = self.pwdInputerRegister.getInput()
+        pwdS = self.pwdVerification.getInput()
+
+        if pwdF != pwdS:
+            # 密码不同, 警告
+            self.warning("两次密码输入不一致!")
+            return False
 
         # 打包用户输入的信息
         info = self.packLoginInfo()
@@ -224,6 +254,16 @@ class LoginWindow(QWidget):
 
         # 向服务器发送登录信息
         # sendInfoToServer()
+
+        # 服务器信息处理
+
+    def enterMainInterface(self):
+        '''
+        该函数仅在loginAccount函数返回True后执行
+        实现登录成功后, 关闭登录界面, 打开主界面的功能
+        '''
+
+        pass
 
     def warning(self, text: str):
         '''
@@ -242,10 +282,12 @@ class LoginWindow(QWidget):
         QMessageBox.warning(self, "", text)
         return
 
+    @Slot()
     def switchToRegister(self):
         self.switchLayout.setCurrentIndex(1)
         self.update()
     
+    @Slot()
     def switchToLogin(self):
         self.switchLayout.setCurrentIndex(0)
         self.update()
