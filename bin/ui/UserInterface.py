@@ -19,6 +19,7 @@ from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
 # 新增引入状态管理和消息模型
 from bin.state.AppState import AppState
 from bin.state.ChatModels import Message
+from bin.tool.LoginTool import LoginWindowTool as tool
 
 # 新增一个信号类，用于安全地将子线程收到的网络消息抛给主线程 UI
 class MainSignals(QObject):
@@ -77,7 +78,108 @@ class MainWindow(QWidget):
     '''
 
     class ContactBar(QWidget):
-        pass
+        
+        Party = True
+        Friend = False
+
+        def __init__(self, type: bool, ID: str = "DefaultID", lastTime: str = "00:00", lastChat: str = "DefaultChat"):
+            '''
+            初始化聊天列表对象
+
+            Args:
+                type(bool): 该聊天列表对象是否为群聊
+                ID(str): 对象的名称
+                lastTime(str): 最新消息时间
+                lastChat(str): 最新消息
+            '''
+            super().__init__()
+
+            self.Type = type
+            self.initUI()
+            self.modifyID(ID)
+            self.modifyLastTime(lastTime)
+            self.modifyLastChat(lastChat)
+
+        def initUI(self):
+            
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+            self.setFixedHeight(50)
+
+            self.creWidgets()
+            self.applyLayout()
+
+        def creWidgets(self):
+            '''
+            创建聊天列表对象的组件
+            '''
+
+            # 群聊或好友名称
+            self.objNameBar = QLabel()
+            self.objNameBar.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+            self.objNameBar.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            self.objNameBar.setFixedHeight(30)
+
+            # 最新消息
+            self.objLastChatBar = QLabel()
+            self.objLastChatBar.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
+            self.objLastChatBar.setStyleSheet("color: gray;")
+            self.objLastChatBar.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            self.objLastChatBar.setFixedHeight(20)
+
+            # 最新消息时间
+            self.objLastTimeBar = QLabel()   # 非本日为日期, 本日为时期
+            self.objLastTimeBar.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
+            self.objLastTimeBar.setStyleSheet("color: gray;")
+            self.objLastTimeBar.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self.objLastTimeBar.setFixedSize(40, 30)
+
+        def applyLayout(self):
+            '''
+            创建并设置聊天列表对象的布局
+            '''
+
+            # 第一行, 包括名称和时间
+            self.nameTimeLayout = ClassicLayout.Horizontal(ClassicLayout.CLeft, ClassicLayout.Default, ClassicLayout.NoBorder, 2)
+            self.nameTimeLayout.addWidget(self.objNameBar, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            self.nameTimeLayout.addStretch(1)
+            self.nameTimeLayout.addWidget(self.objLastTimeBar, 0, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+            # 整体布局
+            self.contactBarLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, (2, 2, 2, 2), 2)
+            self.contactBarLayout.addLayout(self.nameTimeLayout, 0)
+            self.contactBarLayout.addStretch(1)
+            self.contactBarLayout.addWidget(self.objLastChatBar, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom)
+
+            self.setLayout(self.contactBarLayout)
+
+        def modifyID(self, newID: str) -> bool:
+            '''
+            修改对象名称
+
+            Args:
+                newID(str): 新的ID
+            
+            Returns:
+                bool: 是否修改成功
+            '''
+            
+            # 检测新ID是否合法
+            if not tool._is_name_not_uid(newID):
+                return False
+
+            # 修改ID
+            self.objNameBar.setText(newID)
+            return True
+
+        def modifyLastTime(self, lastTime: str):
+            '''修改最后消息的时间, 一般不会出错'''
+
+            self.objLastTimeBar.setText(lastTime)
+
+        def modifyLastChat(self, lastChat: str):
+            '''修改最后一条消息'''
+
+            self.objLastChatBar.setText(lastChat)
 
     class ChatBar(QWidget):
         pass
@@ -327,25 +429,25 @@ class MainWindow(QWidget):
             "message": text
         }
         
-        if self.client:
-            # 1. 把消息发给服务器
-            self.client.send_data(packet)
+        # if self.client:
+        #     # 1. 把消息发给服务器
+        #     self.client.send_data(packet)
             
-            # 2. 把消息存入本地 AppState
-            new_msg = Message(
-                sender_uid=my_uid,
-                sender_nickname=AppState().nickname,
-                content=text,
-                time="刚刚",
-                is_self=True
-            )
-            AppState().add_message(target_friend, new_msg)
+        #     # 2. 把消息存入本地 AppState
+        #     new_msg = Message(
+        #         sender_uid=my_uid,
+        #         sender_nickname=AppState().nickname,
+        #         content=text,
+        #         time="刚刚",
+        #         is_self=True
+        #     )
+        #     AppState().add_message(target_friend, new_msg)
             
-            # 3. 清空输入框，并在控制台打印确认
-            self.messageInputer.clear()
-            print(f"成功发送给 {target_friend}: {text}")
-        else:
-            QMessageBox.warning(self, "错误", "未连接到服务器！")
+        #     # 3. 清空输入框，并在控制台打印确认
+        #     self.messageInputer.clear()
+        #     print(f"成功发送给 {target_friend}: {text}")
+        # else:
+        #     QMessageBox.warning(self, "错误", "未连接到服务器！")
 
 if __name__ == '__main__':
     MMApp = QApplication(sys.argv)
