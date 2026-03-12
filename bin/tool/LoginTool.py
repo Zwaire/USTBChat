@@ -63,7 +63,8 @@ class LoginWindowTool:
         """
         对密码进行派生哈希处理并返回字符串结果。
         Args:
-            test(str):等待加密的明文密码
+            salt (str): 盐值
+            text (str): 等待加密的明文密码
         Returns:
             str:加密后的密码字符串，格式为 "salt$derived_key"，其中 salt 和 derived_key 都是十六进制字符串。
         采用核心的 PBKDF2-HMAC-SHA256 加密算法。
@@ -132,7 +133,7 @@ class LoginWindowTool:
             "ip": LoginInfo._get_localip()
         }
 
-        response = contact_tool._get_response(request, client=client)
+        response = contact_tool._get_response(request)
         if not response:
             return {"error": "no response from server"}
         else:
@@ -142,31 +143,41 @@ class LoginWindowTool:
     def _send_login_info(cls, info: LoginInfo, client=None) -> dict:
         ''' 
         向服务器发送登录信息，错误会返回名为"error"的键，成功则返回服务器响应的字典
-        [WFDebug]
         '''
         _pwd = info.Password
-
-        # 对密码进行客户端派生加密（返回格式为 "salt$derived_key"）
-        encrypted = cls._pwd_encryption(_pwd)
-        if not encrypted:
-            return {"error": "empty password"}
-
-        # 尝试拆分 salt 和 hash
-        if '$' in encrypted:
-            salt_hex, dk_hex = encrypted.split('$', 1)
-        else:
-            return {"error": "password error"}
-
+        # 从服务端请求加密的seed值在本地进行加密
+        request_for_seed = dict(
+            type = "seed",
+            username = info.ID, 
+            ip = LoginInfo._get_localip()
+        )
+        response_for_seed = contact_tool._get_response(request_for_seed)
+        # 返回的格式应该是 dict{"type":"seed", "code":"salt"}
+        PEPPER = os.environ.get("USTBCHAT_PWD_PEPPER", "USTBChat_Default_Pepper_ChangeMe")
+        salt_hex = response_for_seed.get("code", "")
+        try:
+            salt = bytes.fromhex(salt_hex)
+        except ValueError:
+            return {
+                "error": "invalid salt from server"
+            }
+        # 复用PBKDF2-HMAC-SHA256算法，参数与注册完全一致
+        dk = hashlib.pbkdf2_hmac(
+            'sha256',
+            _pwd.encode('utf-8'),
+            salt + PEPPER.encode('utf-8'),
+            100_000
+        )
         # 构建发送到服务器的请求体
         request = {
             "type": "login",
-            "mode": getattr(info, 'Mode', 0),
             "username": getattr(info, 'ID', ''),
-            "hash": dk_hex,
+            "code": dk.hex(), 
             "ip": LoginInfo._get_localip()
         }
+        # 返回验证登录是否成功
 
-        response = contact_tool._get_response(request, client=client)
+        response = contact_tool._get_response(request)
         if not response:
             return {"error": "no response from server"}
         else:
