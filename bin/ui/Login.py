@@ -264,7 +264,6 @@ class LoginWindow(QWidget):
             else:
                 self.warning(f"登录失败: {msg.get('warnings', '账号或密码错误')}")
 
-
     @Slot()
     def loginAccount(self) -> bool:
         '''
@@ -275,56 +274,48 @@ class LoginWindow(QWidget):
             bool: 是否登录成功
         '''
         
-        
         # 打包用户输入的信息
         info = self.packLoginInfo()
 
-        # # 检查输入信息是否合法
-        # result = tool._validate_id(info.ID)
-        # if result != True:
-        #     self.warning(str(result))
-        #     return False
-        
-        # result = tool._validate_password(info.Password)
-        # if result != True:
-        #     self.warning(str(result))
-        #     return False
-        
-        
-        # 验证合法性
-        if tool._validate_id(info.ID) != True or tool._validate_password(info.Password) != True:
-            self.warning("账号或密码格式不正确")
+        # 检查输入信息是否合法
+        result = tool._validate_id(info.ID)
+        if result != True:
+            self.warning(str(result))
             return False
-            
-        # 打包成 《通信接口.md》 规定的格式发送给服务器
-        login_packet = {
-            "type": "login",
-            "username": info.ID,
-            "code": info.Password,
-            "ip": info.IP
-        }
         
-        if not self.client.send_data(login_packet):
-            self.warning("无法连接到服务器！")
+        result = tool._validate_password(info.Password)
+        if result != True:
+            self.warning(str(result))
             return False
-        return True
         
         # 向服务器发送登录信息
-        # [CPD]
-        # 添加了_send_login_info(info: LoginInfo) -> dict|bool函数接口，返回服务器的响应，目前正在等待传送实现，返回的是服务器的字典
-        # <——————————————————————————————————————————————>
-        # sendInfoToServer(info: LoginInfo) -> AnyType:
-        # 提取LoginInfo类中的信息
-        # 对密码进行加密
-        # 将信息组合成可通过TCP传输的格式
-        # 连接服务器, 发送信息
-        # 接收服务器返回的消息
-        # 返回值即服务器返回的消息， 若发送失败则返回False
-        # <——————————————————————————————————————————————>
+        try:
+            serverReply = tool._send_login_info(info)
+        except:
+            self.warning("网络错误")
+            return False
 
-        # 服务器信息处理
+        # 解析服务器返回消息
+        if 'error' in serverReply.keys():
+            self.warning(serverReply['error'])
+            return False
         
+        if serverReply['type'] != 'login':
+            self.warning("服务器返回类型错误")
+            return False
 
+        replyStatue = serverReply['status']
+        if replyStatue == 2:
+            self.warning("登录密码错误")
+            return False
+        elif replyStatue == 0:
+            # 登录成功, 进入主界面
+            self.enterMainInterface()
+            return True
+        else:
+            self.warning("服务器返回状态码错误")
+            return False
+        
     @Slot()
     def registerAccount(self):
         '''
@@ -359,7 +350,6 @@ class LoginWindow(QWidget):
             self.warning(str(result))
 
         # 向服务器发送登录信息
-        # sendInfoToServer()
 
         # 服务器信息处理
 

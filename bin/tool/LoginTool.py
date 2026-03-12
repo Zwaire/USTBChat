@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from bin.MessageFormat import LoginInfo
 import core.protocol as protocol
-import ContactTool as contact_tool
+import bin.tool.ContactTool as contact_tool
 
 
 MAX_LEN = 20
@@ -109,7 +109,7 @@ class LoginWindowTool:
         return response 
 
     @classmethod
-    def _send_login_info(cls, info: LoginInfo) -> dict | bool:
+    def _send_login_info(cls, info: LoginInfo) -> dict:
         ''' 
         向服务器发送登录信息，错误会返回名为"error"的键，成功则返回服务器响应的字典
         '''
