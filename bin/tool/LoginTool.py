@@ -91,7 +91,8 @@ class LoginWindowTool:
 
         return salt.hex() + '$' + dk.hex()
 
-    def _request_pwd_find(self, id: str) -> dict:
+    @classmethod
+    def _request_pwd_find(cls, id: str) -> dict:
         ''' 
         向服务器发送请求，发送id进行查验 ，发送一个字典，返回得到的形式如下所示：
         dict={
@@ -107,14 +108,15 @@ class LoginWindowTool:
         response = contact_tool._get_response(request)
         return response 
 
-    def _send_login_info(self, info: LoginInfo) -> dict | bool:
+    @classmethod
+    def _send_login_info(cls, info: LoginInfo) -> dict | bool:
         ''' 
         向服务器发送登录信息，错误会返回名为"error"的键，成功则返回服务器响应的字典
         '''
         _pwd = info.Password
 
         # 对密码进行客户端派生加密（返回格式为 "salt$derived_key"）
-        encrypted = self._pwd_encryption(_pwd)
+        encrypted = cls._pwd_encryption(_pwd)
         if not encrypted:
             return {"error": "empty password"}
 
