@@ -85,7 +85,7 @@ class MainWindow(QWidget):
         Party = True
         Friend = False
 
-        def __init__(self, type: bool, UID: str, ID: str = "DefaultID", isRead: bool = True, lastTime: str = "00:00", lastChat: str = "DefaultChat"):
+        def __init__(self, type: bool, UID: str, ID: str = "DefaultID", isRead: bool = True, lastTime: str = "00:00", lastChat: str = "DefaultChat", hasRead: bool = False):
             '''
             初始化聊天列表对象
 
@@ -102,6 +102,7 @@ class MainWindow(QWidget):
             self.Type = type
             self.UID = UID
             self.isRead = isRead
+            self.hasRead = hasRead      # 登录之后是否点击过
             self.initUI()
             self.setStyleSheet("border: 2px solid blue;")
             self.modifyID(ID)
@@ -655,6 +656,8 @@ class MainWindow(QWidget):
 
         return True
 
+    # def getHistory
+
     @Slot(dict)
     def process_network_message(self, msg_dict):
         '''
@@ -729,6 +732,20 @@ class MainWindow(QWidget):
         #     print(f"成功发送给 {target_friend}: {text}")
         # else:
         #     QMessageBox.warning(self, "错误", "未连接到服务器！")
+
+def fetchHistoryChatAfterLogin(uid: str) -> Message:
+    '''
+    在登录之后第一次点击某个聊天时, 从服务器获取过往的聊天记录
+
+    Args:
+        uid(str): 聊天对象的UID
+    
+    Returns:
+        Message: 一个聊天记录结构, 这里不顺便转换成ChatBar的原因是节省内存空间, 当使用时再转换成ChatBar
+    '''
+
+    pass
+
 
 def cleanWidgetsInLayout(layout: QLayout, left: int = 0):
     '''清理布局中的组件, 但保留最后left数量的组件'''

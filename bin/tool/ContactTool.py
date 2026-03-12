@@ -125,12 +125,12 @@ def request_friend_list() -> dict:
         "friends":[...] # Friend 列表
     }
     """
-    # return dict(
-    #     type="friend_list",
-    #     friends=[Friend(uid="10001", nickname="Alice")] +
-    #             [Friend(uid="10002", nickname="Bob")]
-    # )
-    return _get_response({"type": "get_friend_list", "username": _uid})
+    return dict(
+        type="friend_list",
+        friends=[Friend(uid="10001", nickname="Alice")] +
+                [Friend(uid="10002", nickname="Bob")]
+    )
+    # return _get_response({"type": "get_friend_list", "username": _uid})
 
 def request_group_list() -> dict:
     """
@@ -140,11 +140,11 @@ def request_group_list() -> dict:
         "groups":[...]  # Group 列表
     }
     """
-    # return dict(
-    #     type="group_list",
-    #     groups=[Group(gid="g123", name="Study Group")]
-    # )
-    return _get_response({"type": "get_group_list", "username": _uid})
+    return dict(
+        type="group_list",
+        groups=[Group(gid="g123", name="Study Group")]
+    )
+    # return _get_response({"type": "get_group_list", "username": _uid})
 
 def request_add_friend(target_uid: str) -> dict:
     """
