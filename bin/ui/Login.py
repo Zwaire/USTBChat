@@ -407,7 +407,7 @@ class LoginWindow(QWidget):
         '''
 
         QMessageBox.warning(self, "", text)
-        raise ValueError("this is a error")
+        # raise ValueError("this is a error")
         return
 
     @Slot()

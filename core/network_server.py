@@ -58,11 +58,19 @@ class ChatServer:
                         print("错误：拼接字符串格式不正确，缺少分隔符 $")
 
                     res = db.register(username, dk_hex, salt_hex)
-                    # status: 1为成功，0为已存在
+
+                    print('===============',res.get("status"))
+                    # status: 0为成功，1为已存在
+
+                    # conn.sendall(encode_msg({
+                    #     "type": "register",
+                    #     "status": True if res.get("status") == 0 else False,
+                    #     "warnings": "The user exists" if res.get("status") == 0 else ""
+                    # }))
                     conn.sendall(encode_msg({
                         "type": "register",
-                        "status": True if res.get("statuts") == 1 else False,
-                        "warnings": "The user exists" if res.get("statuts") == 0 else ""
+                        "status": res.get("status"),
+                        "warnings": "The user exists" if res.get("status") == 1 else ""
                     }))
                 elif msg_type=="seed":
                     username=msg.get("username")
