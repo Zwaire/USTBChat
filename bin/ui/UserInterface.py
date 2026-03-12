@@ -878,7 +878,7 @@ def wipeOutChildItemOfLayout(layout: QLayout, delete_layout_itself: bool = False
         sub_layout = item.layout()
         if sub_layout is not None:
             # 递归清空这个子布局
-            clear_layout_recursively(sub_layout, delete_layout_itself=True)
+            wipeOutChildItemOfLayout(sub_layout, delete_layout_itself=True)
             # 子布局已被清空，其管理的 item 也被 takeAt 移除
             # 注意：此时 sub_layout 对象可能仍有父级，但已为空
             continue
