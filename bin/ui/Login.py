@@ -328,7 +328,7 @@ class LoginWindow(QWidget):
     @Slot()
     def registerAccount(self):
         '''
-        点击登录按钮后的操作
+        点击注册按钮后的操作
         包括密码验证、信息打包、输入验证、错误警告、信息发送和服务器消息处理
         '''
 
