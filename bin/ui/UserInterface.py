@@ -67,6 +67,12 @@ class MainWindow(QWidget):
 
     '''
 
+    class ContactBar(QWidget):
+        pass
+
+    class ChatBar(QWidget):
+        pass
+
     def __init__(self):
         super().__init__()
 
