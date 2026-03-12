@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -15,9 +14,7 @@ from bin.tool.LoginTool import LoginWindowTool as tool
 
 # 导入改造好的 ChatClient ，引入全局状态单例
 from core.network_client import ChatClient
-from bin.state.AppState import AppState  # 【
 
-# 定义一个信号类，用于安全地将子线程收到的网络消息抛给主线程 UI
 class NetworkSignals(QObject):
     msg_received = Signal(dict)
 
@@ -52,7 +49,7 @@ class LoginWindow(QWidget):
 
         # 初始化网络模块
         self.signals = NetworkSignals()
-        self.signals.msg_received.connect(self.handle_server_response)
+        # self.signals.msg_received.connect(self.handle_server_response)
         
         # 将ChatClient收到的消息通过信号发送到主线程
         self.client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg))
@@ -234,35 +231,35 @@ class LoginWindow(QWidget):
         else:
             self.warning("服务器返回意料之外的状态码")
     
-    def handle_server_response(self, msg: dict):
-        '''
-        用于处理从服务器返回的响应包 (此函数运行在主线程)
-        '''
-        msg_type = msg.get("type")
-        status = msg.get("status")
+    # def handle_server_response(self, msg: dict):
+    #     '''
+    #     用于处理从服务器返回的响应包 (此函数运行在主线程)
+    #     '''
+    #     msg_type = msg.get("type")
+    #     status = msg.get("status")
         
-        if msg_type == "register":
-            if status == True:
-                QMessageBox.information(self, "成功", "注册成功，请登录！")
-                self.switchToLogin()
-            else:
-                self.warning(f"注册失败: {msg.get('warnings', '未知错误')}")
+    #     if msg_type == "register":
+    #         if status == True:
+    #             QMessageBox.information(self, "成功", "注册成功，请登录！")
+    #             self.switchToLogin()
+    #         else:
+    #             self.warning(f"注册失败: {msg.get('warnings', '未知错误')}")
                 
-        elif msg_type == "login":
-            if status == True:
-                # 适配 AppState：登录成功后初始化全局状态和本地持久化目录
-                uid = msg.get("uid", self.packLoginInfo().ID)
-                nickname = msg.get("nickname", uid)
-                friends = msg.get("friends", [])  # 服务器传来的好友列表
-                groups = msg.get("groups", [])    # 服务器传来的群组列表
+    #     elif msg_type == "login":
+    #         if status == True:
+    #             # 适配 AppState：登录成功后初始化全局状态和本地持久化目录
+    #             uid = msg.get("uid", self.packLoginInfo().ID)
+    #             nickname = msg.get("nickname", uid)
+    #             friends = msg.get("friends", [])  # 服务器传来的好友列表
+    #             groups = msg.get("groups", [])    # 服务器传来的群组列表
                 
-                # 初始化单例
-                AppState().on_login(uid, nickname, friends, groups)
+    #             # 初始化单例
+    #             AppState().on_login(uid, nickname, friends, groups)
 
-                QMessageBox.information(self, "成功", "登录成功！")
-                self.enterMainInterface()
-            else:
-                self.warning(f"登录失败: {msg.get('warnings', '账号或密码错误')}")
+    #             QMessageBox.information(self, "成功", "登录成功！")
+    #             self.enterMainInterface()
+    #         else:
+    #             self.warning(f"登录失败: {msg.get('warnings', '账号或密码错误')}")
 
     @Slot()
     def loginAccount(self) -> bool:
@@ -290,7 +287,7 @@ class LoginWindow(QWidget):
         
         # 向服务器发送登录信息
         try:
-            serverReply = tool._send_login_info(info)
+            serverReply = tool._send_login_info(info, client=self.client)
         except:
             self.warning("网络错误")
             return False
@@ -351,7 +348,7 @@ class LoginWindow(QWidget):
 
         # 向服务器发送登录信息
         try:
-            serverReply = tool._send_register_info(info)
+            serverReply = tool._send_register_info(info, client=self.client)
         except:
             self.warning("网络错误")
             return

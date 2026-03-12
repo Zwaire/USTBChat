@@ -109,7 +109,7 @@ class LoginWindowTool:
         return response 
 
     @classmethod
-    def _send_register_info(cls, info: LoginInfo) -> dict:
+    def _send_register_info(cls, info: LoginInfo, client=None) -> dict:
         ''' 
         向服务器发送注册信息，错误会返回名为"error"的键，成功则返回服务器响应的字典，返回的格式如下所示
         dict={
@@ -132,14 +132,14 @@ class LoginWindowTool:
             "ip": LoginInfo._get_localip()
         }
 
-        response = contact_tool._get_response(request)
+        response = contact_tool._get_response(request, client=client)
         if not response:
             return {"error": "no response from server"}
         else:
             return response
 
     @classmethod
-    def _send_login_info(cls, info: LoginInfo) -> dict:
+    def _send_login_info(cls, info: LoginInfo, client=None) -> dict:
         ''' 
         向服务器发送登录信息，错误会返回名为"error"的键，成功则返回服务器响应的字典
         [WFDebug]
@@ -166,7 +166,7 @@ class LoginWindowTool:
             "ip": LoginInfo._get_localip()
         }
 
-        response = contact_tool._get_response(request)
+        response = contact_tool._get_response(request, client=client)
         if not response:
             return {"error": "no response from server"}
         else:

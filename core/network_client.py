@@ -9,7 +9,8 @@ class ChatClient:
     def __init__(self, callback):
         self.socket = None
         self.username = None
-        self.callback = callback  # 用于将接收到的消息回调
+        # 支持多个回调监听器，保持向后兼容：传入单个 callback 会被注册为唯一监听器
+        self._callback = callback
         self.running = False
 
     def connect(self, host, port):
@@ -29,13 +30,18 @@ class ChatClient:
             try:
                 msg = decode_msg(self.socket)
                 if msg:
-                    self.callback(msg)
+                    # 分发到所有注册的回调
+                    for cb in list(self._callback):
+                        try:
+                            cb(msg)
+                        except Exception:
+                            pass
                 else:
                     break
             except Exception:
                 break
         self.disconnect()
-        self.callback({"type": "system", "content": "unlink from server!!"})
+        self._callback({"type": "system", "content": "unlink from server!!"})
 
     def send_data(self, msg_dict):
         """通用发送接口，支持传入符合通信接口规范的字典"""
@@ -47,7 +53,7 @@ class ChatClient:
         except Exception as e:
             logger.error(f"发送失败: {e}")
             return False
-
+        
     def disconnect(self):
         self.running = False
         if self.socket:

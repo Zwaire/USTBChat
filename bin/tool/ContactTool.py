@@ -29,13 +29,13 @@ def on_login(client, uid: str, nickname: str,
     _contacts.clear()
     _chat_history.clear()
 
-    for f in friends:
-        _friends[f["uid"]] = Friend(f["uid"], f["nickname"])
-        _contacts.append(Contact(id=f["uid"], name=f["nickname"], is_group=False))
+    # for f in friends:
+    #     _friends[f["uid"]] = Friend(f["uid"], f["nickname"])
+    #     _contacts.append(Contact(id=f["uid"], name=f["nickname"], is_group=False))
 
-    for g in groups:
-        _groups[g["gid"]] = Group(g["gid"], g["name"])
-        _contacts.append(Contact(id=g["gid"], name=g["name"], is_group=True))
+    # for g in groups:
+    #     _groups[g["gid"]] = Group(g["gid"], g["name"])
+    #     _contacts.append(Contact(id=g["gid"], name=g["name"], is_group=True))
 
 def get_client():
     return _client
@@ -69,57 +69,108 @@ def logout():
 def _get_response(request: dict, timeout: float = 5.0) -> dict:
     """
     发送请求并阻塞等待第一条响应后返回。
-    临时替换 client.callback 捕获响应，完成后恢复。
+    临时替换 client.callback 捕获响应，完成后恢复原回调。
+    修复：获取原回调、健壮的回调恢复、严谨的客户端校验
     """
-    if _client is None or not _client.running:
+    # 严谨校验客户端：非空 + 运行中 + 存在callback属性
+    if _client is None or not getattr(_client, "running", False) or not hasattr(_client, "callback"):
         return {}
-
+    # 提前获取客户端原回调
+    original_callback = _client.callback
     event = threading.Event()
     response_holder = {}
-    original_callback = _client.callback
 
     def _temp_callback(msg: dict):
-        response_holder.update(msg)
+        """临时回调：捕获响应后触发事件，立即恢复原回调"""
+        if isinstance(msg, dict):  # 防护：确保消息是字典格式
+            response_holder.update(msg)
         event.set()
-        _client.callback = original_callback
+        # 回调内也做恢复：防止后续逻辑执行异常导致原回调未恢复
+        if _client and _client.callback == _temp_callback:
+            _client.callback = original_callback
 
-    _client.callback = _temp_callback
-    _client.send_data(request)
-    event.wait(timeout)
-
-    if not event.is_set():
-        _client.callback = original_callback
-
+    try:
+        _client.callback = _temp_callback
+        _client.send_data(request)
+        event.wait(timeout)
+    finally:
+        if _client and _client.callback == _temp_callback:
+            _client.callback = original_callback
+            
     return response_holder
 
 # ── 服务端请求接口 ────────────────────────────────────────────
 
 def request_contacts_list() -> dict:
-    """请求会话列表（好友+群组）。服务器应返回 {"type":"contacts_list","contacts":[...]}"""
+    """
+    请求会话列表。
+    服务器应返回 
+    {
+        "type":"contacts_list",
+        "contacts":[...] # Contact 列表
+    }
+    """
     return _get_response({"type": "get_contacts_list", "username": _uid})
 
 def request_friend_list() -> dict:
-    """请求好友列表。服务器应返回 {"type":"friend_list","friends":[...]}"""
+    """
+    请求好友列表。服务器应返回 
+    {
+        "type":"friend_list",
+        "friends":[...] # Friend 列表
+    }
+    """
     return _get_response({"type": "get_friend_list", "username": _uid})
 
 def request_group_list() -> dict:
-    """请求群组列表。服务器应返回 {"type":"group_list","groups":[...]}"""
+    """
+    请求群组列表。服务器应返回 
+    {
+        "type":"group_list",
+        "groups":[...]  # Group 列表
+    }
+    """
     return _get_response({"type": "get_group_list", "username": _uid})
 
 def request_add_friend(target_uid: str) -> dict:
-    """发送加好友请求。服务器应返回 {"type":"add_friend","status":"ok"/"error"}"""
+    """
+    发送加好友请求。服务器应返回 
+    {
+        "type":"add_friend",
+        "status":0 
+    }
+    """
     return _get_response({"type": "add_friend", "username": _uid, "target": target_uid})
 
 def request_join_group(gid: str) -> dict:
-    """发送加群请求。服务器应返回 {"type":"join_group","status":"ok"/"error"}"""
+    """
+    发送加群请求。服务器应返回 
+    {
+        "type":"join_group",
+        "status":0
+    }
+    """
     return _get_response({"type": "join_group", "username": _uid, "gid": gid})
 
 def request_leave_group(gid: str) -> dict:
-    """发送退群请求。服务器应返回 {"type":"leave_group","status":"ok"/"error"}"""
+    """
+    发送退群请求。服务器应返回 
+    {
+        "type":"leave_group",
+        "status":0
+    }
+    """
     return _get_response({"type": "leave_group", "username": _uid, "gid": gid})
 
 def request_group_members(gid: str) -> dict:
-    """请求群成员列表。服务器应返回 {"type":"group_members","gid":"...","members":[...]}"""
+    """
+    请求群成员列表。服务器应返回 
+    {
+        "type":"group_members",
+        "gid":"...",
+        "members":[...]
+    }
+    """
     return _get_response({"type": "get_group_members", "username": _uid, "gid": gid})
 
 # ── 消息操作 ──────────────────────────────────────────────────
