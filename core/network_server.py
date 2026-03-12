@@ -161,8 +161,8 @@ class ChatServer:
                     # status: 1为成功，0为已存在
                     conn.sendall(encode_msg({
                         "type": "register",
-                        "status": True if res.get("statuts") == 1 else False,
-                        "warnings": "The user exists" if res.get("statuts") == 0 else ""
+                        "status": res.get("status"),
+                        "warnings": "The user exists" if res.get("status") == 1 else ""
                     }))
                 elif msg_type=="seed":
                     username=msg.get("username")

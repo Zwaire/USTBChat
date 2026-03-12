@@ -14,19 +14,19 @@ FLUSH PRIVILEGES;
 然后创建对应的数据库：
 
 
--- 1. 创建并使用 chat 数据库
-CREATE DATABASE IF NOT EXISTS chat DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE IF EXISTS chat;
+
+CREATE DATABASE chat DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE chat;
 
--- 2. 创建用户表
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    code VARCHAR(255) NOT NULL
+    code VARCHAR(255) NOT NULL,
+    seed VARCHAR(255) NOT NULL
 );
 
--- 3. 创建在线会话表 (包含 data.py 中需要的字段)
-CREATE TABLE IF NOT EXISTS user_sessions (
+CREATE TABLE user_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     name VARCHAR(255),
@@ -36,28 +36,24 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     status INT
 );
 
--- 4. 创建好友关系表
-CREATE TABLE IF NOT EXISTS friends (
+CREATE TABLE friends (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     friend_id INT NOT NULL
 );
 
--- 5. 创建群组列表表
-CREATE TABLE IF NOT EXISTS groups_list (
+CREATE TABLE groups_list (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE
 );
 
--- 6. 创建群组关系表
-CREATE TABLE IF NOT EXISTS groups_member (
+CREATE TABLE groups_member (
     id INT AUTO_INCREMENT PRIMARY KEY,
     group_id INT NOT NULL,
     user_id INT NOT NULL
 );
 
--- 7. 创建私聊消息记录表
-CREATE TABLE IF NOT EXISTS messages (
+CREATE TABLE messages (
     id INT AUTO_INCREMENT PRIMARY KEY,
     send_id INT NOT NULL,
     recive_id INT NOT NULL,
@@ -65,8 +61,7 @@ CREATE TABLE IF NOT EXISTS messages (
     time DATETIME
 );
 
--- 8. 创建群聊消息记录表
-CREATE TABLE IF NOT EXISTS group_messages (
+CREATE TABLE group_messages (
     id INT AUTO_INCREMENT PRIMARY KEY,
     group_id INT NOT NULL,
     send_id INT NOT NULL,
@@ -74,5 +69,6 @@ CREATE TABLE IF NOT EXISTS group_messages (
     time DATETIME
 );
 
--- 刷新并确认
 SHOW TABLES;
+DESC users;
+DESC user_sessions;
