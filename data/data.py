@@ -1,6 +1,6 @@
 import mysql.connector
 
-def register(name,code):
+def register(name,code,seed):
     db=mysql.connector.connect(
     host="localhost",
     user="root",
@@ -12,12 +12,58 @@ def register(name,code):
     cursor.execute(sql,(name,))
     results=cursor.fetchall()
     if len(results)!=0:
-        return {"type":"register","statuts":0}
-    else :
-        sql="insert into users (name,code) values (%s,%s)"
-        cursor.execute(sql,(name,code))
-        db.commit()
         return {"type":"register","statuts":1}
+    else :
+        sql="insert into users (name,code,seed) values (%s,%s)"
+        cursor.execute(sql,(name,code,seed))
+        db.commit()
+        return {"type":"register","statuts":0}
+    
+def seed(name):
+    db=mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1",
+    database="chat"
+    )
+    cursor=db.cursor()
+    sql="select * from users where name = %s"
+    cursor.execute(sql,(name,))
+    results=cursor.fetchall()
+    if len(results)>0:
+        seed=results[0][3]
+        db.commit()
+        return {"type":"seed","status":0,"seed":seed}
+    else:
+        db.commit()
+        return {"type":"seed","status":9}
+    
+def request_pwd_find(name):
+    db=mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1",
+    database="chat"
+    )
+    cursor=db.cursor()
+    sql="select * from users where name=%s"
+    cursor.execute(sql,(name,))
+    results=cursor.fetchall()
+    if results>0:
+        return {"type":"request_pwd_find","status":0}
+    else:
+        return{"type":"request_pwd_find","status":8}
+    
+def change_code(name,code,seed):
+    db=mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1",
+    database="chat"
+    )
+    cursor=db.cursor()
+    sql="update users set code=%s ,seed=%s where name=%s "
+    cursor.execute(sql,(code,seed,name))
     
 def log_in(name,code,ip):
     db=mysql.connector.connect(
@@ -35,7 +81,7 @@ def log_in(name,code,ip):
         cursor.execute(sql,(results[0],))
         results_two=cursor.fetchall()
         if len(results_two)>0:
-            sql="update user_sessions set ip=INET_ATON(%s) time=now()  where name=%s"
+            sql="update user_sessions set ip=INET_ATON(%s), time=now()  where name=%s"
             cursor.execute(sql,(ip,name))
             db.commit()
             return {"type":"login","statuts":0}
@@ -255,82 +301,3 @@ def find_group_ip(name):
             return ip
     else:
         return None
-    
-def get_history_message_private(user_name, friend_name):
-
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
-
-    cursor = db.cursor()
-
-    user_id = find(user_name, "users")
-    friend_id = find(friend_name, "users")
-
-    sql = """
-    SELECT m.message, m.time, u.name
-    FROM messages m
-    JOIN users u ON m.send_id = u.user_id
-    WHERE (m.send_id=%s AND m.recive_id=%s)
-       OR (m.send_id=%s AND m.recive_id=%s)
-    ORDER BY m.time DESC, m.id DESC
-    LIMIT 50
-    """
-
-    cursor.execute(sql, (user_id, friend_id, friend_id, user_id))
-
-    results = cursor.fetchall()
-
-    messages = []
-
-    for row in results:
-        messages.append({
-            "send_name": row[2],
-            "message": row[0],
-            "time": row[1]
-        })
-
-    return messages
-
-def get_history_message_public(group_name):
-
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
-
-    cursor = db.cursor()
-
-    group_id = find(group_name,"groups_list")
-
-    sql = """
-    SELECT u.name, gm.message, gm.time
-    FROM group_messages gm
-    JOIN users u ON gm.send_id = u.user_id
-    WHERE gm.group_id = %s
-    ORDER BY gm.time DESC, gm.id DESC
-    LIMIT 50
-    """
-
-    cursor.execute(sql, (group_id,))
-
-    results = cursor.fetchall()
-
-    messages = []
-
-    for row in results:
-        messages.append({
-            "send_name": row[0],
-            "message": row[1],
-            "time": row[2]
-        })
-
-    cursor.close()
-    db.close()
-
-    return messages

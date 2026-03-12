@@ -12,8 +12,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
                                QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit)
-from PySide6.QtCore import Qt, Slot
+# from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, Slot, QObject, Signal
 from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
+
+# 新增引入状态管理和消息模型
+from bin.state.AppState import AppState
+from bin.state.ChatModels import Message
+
+# 新增一个信号类，用于安全地将子线程收到的网络消息抛给主线程 UI
+class MainSignals(QObject):
+    msg_received = Signal(dict)
 
 class MainWindow(QWidget):
     '''
@@ -77,6 +86,18 @@ class MainWindow(QWidget):
         super().__init__()
 
         # 主窗口属性预设
+        self.setWindowTitle("USTBChat")
+        
+        # 接管网络客户端
+        # self.client = client
+        # if self.client:
+        #     # 初始化信号
+        #     self.signals = MainSignals()
+        #     self.signals.msg_received.connect(self.process_network_message)
+            
+        #     # 将 client 的回调函数重定向到 MainWindow 的信号
+        #     # 这样收到新消息就不会再发给 LoginWindow 了，而是发给主界面
+        #     self.client.callback = lambda msg: self.signals.msg_received.emit(msg)
 
 
 
@@ -100,6 +121,9 @@ class MainWindow(QWidget):
         self.mainLayout.addWidget(Separator(Separator.Vertical, width=1))
         self.mainLayout.addWidget(self.rightSideBarSection, 0)
         self.setLayout(self.mainLayout)
+
+        # 新增绑定按钮交互事件
+        self.slotsConnect()
 
     def creLeftWidgets(self):
         '''
@@ -243,6 +267,85 @@ class MainWindow(QWidget):
         self.rightSideBarLayout.addWidget(self.partyMemberSection, 0)
         self.rightSideBarSection.setLayout(self.rightSideBarLayout)
         
+    @Slot(dict)
+    def process_network_message(self, msg_dict):
+        '''
+        新增：处理从服务器推送到主界面的消息
+        '''
+        msg_type = msg_dict.get("type")
+        
+        if msg_type == "message":
+            # 解析服务器传来的私聊消息
+            sender_id = msg_dict.get("username", "Unknown")
+            content = msg_dict.get("message", "")
+            
+            # 实例化新的 Message 对象
+            new_msg = Message(
+                sender_uid=sender_id,
+                sender_nickname=sender_id, 
+                content=content,
+                time=msg_dict.get("time", ""),
+                is_self=False
+            )
+            
+            # 利用 AppState 进行本地持久化并更新内存缓存
+            AppState().add_message(target_id=sender_id, msg=new_msg)
+            
+            # 可以在这里追加 UI 刷新的代码，比如把消息打印到中间的聊天框里
+            print(f"收到来自 {sender_id} 的消息: {content}")
+            
+        elif msg_type == "system":
+            print(f"系统消息: {msg_dict.get('content')}")
+    
+    def slotsConnect(self):
+        '''绑定UI交互事件'''
+        # 将“发送”按钮的点击事件连接到 send_message 函数
+        self.messageSendButton.clicked.connect(self.send_message)
+
+    @Slot()
+    def send_message(self):
+        '''处理发送按钮点击事件'''
+        # 获取输入框的纯文本
+        text = self.messageInputer.toPlainText().strip()
+        if not text:
+            return # 没写字就不发
+            
+        from bin.state.AppState import AppState
+        from bin.state.ChatModels import Message
+
+        my_uid = AppState().uid
+        
+        # 注意：由于目前左侧列表没做好，我们暂时无法通过点击来“选中”好友。
+        # 为了让代码跑通，我们先强行指定一个目标好友 (建议去 MySQL 注册一个名为 test 的账号用来测试)
+        target_friend = "test" 
+
+        # 构造符合《通信接口.md》规范的报文
+        packet = {
+            "type": "message",
+            "username": my_uid,
+            "friendname": target_friend,
+            "message": text
+        }
+        
+        if self.client:
+            # 1. 把消息发给服务器
+            self.client.send_data(packet)
+            
+            # 2. 把消息存入本地 AppState
+            new_msg = Message(
+                sender_uid=my_uid,
+                sender_nickname=AppState().nickname,
+                content=text,
+                time="刚刚",
+                is_self=True
+            )
+            AppState().add_message(target_friend, new_msg)
+            
+            # 3. 清空输入框，并在控制台打印确认
+            self.messageInputer.clear()
+            print(f"成功发送给 {target_friend}: {text}")
+        else:
+            QMessageBox.warning(self, "错误", "未连接到服务器！")
 
 if __name__ == '__main__':
     MMApp = QApplication(sys.argv)

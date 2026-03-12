@@ -4,7 +4,7 @@ import hashlib
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from bin.MessageFormat import LoginInfo
-
+import core.protocol as protocol
 
 MAX_LEN = 20
 _RE_UID      = re.compile(r'^\d+$')
@@ -93,6 +93,8 @@ class LoginWindowTool:
         Returns:
             dict: 服务器返回的响应数据，包含是否成功、错误信息等
         '''
+        _request = protocol.encode_msg(request)
+        
         # [WFT]
         # <————————————————————————————————————>
         # 需要将request 发送到服务器，并且得到服务器的响应

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# 11-*- coding: utf-8 -*-
 from dataclasses import dataclass, field
 
 
@@ -18,6 +18,26 @@ class Message:
     time: str           # 格式由服务器决定，直接存字符串
     is_self: bool       # 是否是自己发的
 
+    def message_to_dict(self) -> dict:
+        return {
+            "sender_uid":       self.sender_uid,
+            "sender_nickname":  self.sender_nickname,
+            "content":          self.content,
+            "time":             self.time,
+            "is_self":          self.is_self,
+        }
+
+    @staticmethod
+    def dict_to_message(d: dict) -> "Message":
+        return Message(
+            sender_uid=d["sender_uid"],
+            sender_nickname=d["sender_nickname"],
+            content=d["content"],
+            time=d["time"],
+            is_self=d["is_self"],
+        )
+
+
 @dataclass
 class Contact:
     """好友或群组的统一抽象，用于左侧会话列表"""
@@ -27,54 +47,6 @@ class Contact:
     last_message: str = ""
     last_time: str = ""
     unread: int = 0
-
-class ChatTool:
-
-    @staticmethod
-    def message_to_dict(m: Message) -> dict:
-        return {
-            "sender_uid":       m.sender_uid,
-            "sender_nickname":  m.sender_nickname,
-            "content":          m.content,
-            "time":             m.time,
-            "is_self":          m.is_self,
-        }
-
-    @staticmethod
-    def dict_to_message(d: dict) -> Message:
-        return Message(
-            sender_uid=d["sender_uid"],
-            sender_nickname=d["sender_nickname"],
-            content=d["content"],
-            time=d["time"],
-            is_self=d["is_self"],
-        )
-
-    @staticmethod
-    def contact_to_dict(c: Contact) ->dict:
-        return {
-            'id': c.id,
-            'name': c.name,
-            'is_group': c.is_group,
-            'last_message': c.last_message,
-            'last_time': c.last_time,
-            'unread': c.unread
-        }
-
-    @staticmethod
-    def dict_to_contact(d: dict) -> Contact:
-        return Contact(
-            id=d['id'],
-            name=d['name'],
-            is_group=d['is_group'],
-            last_message=d['last_message'],
-            last_time=d['last_time'],
-            unread=d['unread']
-        )
-    
-
-
-
 
 
 @dataclass
