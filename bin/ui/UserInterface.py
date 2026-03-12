@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
                                QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit)
-# from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QTextOption
 from PySide6.QtCore import Qt, Slot, QObject, Signal
 from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
 
@@ -182,7 +182,70 @@ class MainWindow(QWidget):
             self.objLastChatBar.setText(lastChat)
 
     class ChatBar(QWidget):
-        pass
+        '''
+        显示在聊天区域的聊天块
+        '''
+
+        def __init__(self, isSelf: bool):
+            '''
+            Args:
+                isSelf(bool): 消息是否为自己发出的
+            '''
+            super().__init__()
+
+            self.isSelf = isSelf
+        
+        def initUI(self):
+
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
+            self.creWidgets()
+            self.applyLayout()
+
+        def creWidgets(self):
+
+            # 时间
+            self.chatSendTime = QLabel()
+            self.chatSendTime.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self.chatSendTime.setFixedSize(80, 20)
+            self.chatSendTime.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
+
+            # 对象ID
+            self.chatSenderID = QLabel()
+            self.chatSenderID.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+            self.chatSenderID.setMinimumWidth(100)
+            self.chatSenderID.setFixedHeight(30)
+            self.chatSenderID.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+            
+            # 消息内容块
+            self.chatContent = QPlainTextEdit()
+            self.chatContent.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+            self.chatContent.setReadOnly(True)
+            self.chatContent.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            self.chatContent.setMinimumWidth(200)
+            if self.isSelf: self.chatContent.setStyleSheet("background-color: #868686")
+            
+        def applyLayout(self):
+
+            self.chatCubeLayout = ClassicLayout.Vertical(ClassicLayout.RTop, ClassicLayout.MinMax, (20, 0, 20, 0), 5) if self.isSelf else ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, (20, 0, 20, 0), 5)
+            self.chatCubeLayout.addWidget(self.chatSendTime, 0)
+            self.chatCubeLayout.addWidget(self.chatSenderID, 0)
+            self.chatCubeLayout.addWidget(self.chatContent, 1)
+            self.setLayout(self.chatCubeLayout)
+
+        def modifySenderID(self, ID: str) -> bool:
+
+            if not tool._is_name_not_uid(ID):
+                return False
+
+            self.chatSenderID.setText(ID)
+            return True
+        
+        def modifySendTime(self, sendTime: str):
+            self.chatSendTime.setText(sendTime)
+        
+        def modifyChatContent(self, content: str):
+            self.chatContent.setPlainText(content)
+
 
     def __init__(self):
         super().__init__()

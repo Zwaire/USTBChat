@@ -170,6 +170,7 @@ class ClassicLayout():
     CLeft = Left | VCenter
     CRight = Right | VCenter
     LTop = Left | Top
+    RTop = Right | Top
 
     # 常用约束
     Default = QLayout.SizeConstraint.SetDefaultConstraint
