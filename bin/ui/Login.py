@@ -214,13 +214,25 @@ class LoginWindow(QWidget):
             return
 
         # 获取ID, 向服务器发送找回密码请求
-        # [CPD]
-        # 添加_request_pwd_find(id: str)->dict:函数接口，返回服务器的地址，目前正在等待传送实现
-        # <————————————————————————————————————>
-        # requestPasswordRetrieve(id: str) -> AnyType:
-        # 发送密码找回请求, 返回值是服务器的返回消息
-        # <————————————————————————————————————>
-
+        try:
+            serverReply =  tool._request_pwd_find(account)
+        except:
+            self.warning("网络错误")
+            return
+        
+        # 解析服务器返回消息
+        if serverReply['type'] != 'register':
+            # 服务器出错， 返回的不是注册信息
+            self.warning("服务器出错")
+        
+        if serverReply['status'] == 8:
+            # 找回密码但用户名不存在
+            self.warning("用户不存在")
+        elif serverReply['status'] == 0:
+            # 找回密码成功, 可直接登录
+            self.warning("密码已重置, 可用任意密码登录")
+        else:
+            self.warning("服务器返回意料之外的状态码")
     
     def handle_server_response(self, msg: dict):
         '''
