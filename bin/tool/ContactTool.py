@@ -112,8 +112,8 @@ def request_contacts_list() -> dict:
     """
     return dict(
         type="contacts_list",
-        contacts=[Contact(id="1231", name="John Doe", is_group=False) ] +
-                [Contact(id="g123", name="Study Group", is_group=True)]
+        contacts=[Contact(id="1231", name="JohnDoe", is_group=False) ] +
+                [Contact(id="g123", name="StudyGroup", is_group=True)]
     )
     # return _get_response({"type": "get_contacts_list", "username": _uid})
 

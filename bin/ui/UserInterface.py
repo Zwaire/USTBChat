@@ -102,6 +102,7 @@ class MainWindow(QWidget):
             self.UID = UID
             self.isRead = isRead
             self.initUI()
+            self.setStyleSheet("border: 2px solid blue;")
             self.modifyID(ID)
             self.modifyLastTime(lastTime)
             self.modifyLastChat(lastChat)
@@ -187,6 +188,10 @@ class MainWindow(QWidget):
 
             self.objLastChatBar.setText(lastChat)
 
+        # # def printInfo(self):
+        #     print("ObjName: ", self.objNameBar.text())
+        #     print("Last Message: ", self.objLastChatBar.text())
+
     class FriendBar(QWidget):
 
         def __init__(
@@ -194,9 +199,13 @@ class MainWindow(QWidget):
                 UID: str,
                 ID: str
         ):
+            
+            super().__init__()
+
             self.UID = UID
 
             self.initUI()
+            self.setStyleSheet("border: 2px solid blue;")
             self.modifyUserName(ID)
 
         def initUI(self):
@@ -228,9 +237,13 @@ class MainWindow(QWidget):
                 UID: str,
                 ID: str
         ):
+            
+            super().__init__()
+
             self.UID = UID
 
             self.initUI()
+            self.setStyleSheet("border: 2px solid blue;")
             self.modifyPartyName(ID)
 
         def initUI(self):
@@ -268,6 +281,7 @@ class MainWindow(QWidget):
             super().__init__()
 
             self.isSelf = isSelf
+            self.initUI()
         
         def initUI(self):
 
@@ -352,6 +366,8 @@ class MainWindow(QWidget):
         self.setLayout(self.mainLayout)
 
         self.initContactList()
+        self.getFriendsListFromServer()
+        self.getGroupsListFromServer()
 
         # 新增绑定按钮交互事件
         self.slotsConnect()
@@ -507,6 +523,7 @@ class MainWindow(QWidget):
         self.friendsButton.clicked.connect(lambda checked: self.displayFriendsBar())
         self.partiesButton.clicked.connect(lambda checked: self.displayPartiesBar())
 
+    @Slot()
     def displayNewsContactBar(self):
         '''将左侧边栏下方改为显示最新消息'''
 
@@ -515,10 +532,11 @@ class MainWindow(QWidget):
 
         # 加载
         for i in range(len(self.newsContactBarList)):
-            self.newsListLayout.insertWidget(-1, self.newsContactBarList[i])
+            self.newsListLayout.insertWidget(self.newsListLayout.count() - 1, self.newsContactBarList[i])
         
         self.newsListLayout.update()
 
+    @Slot()
     def displayFriendsBar(self):
 
         # 清空左侧边栏
@@ -526,10 +544,11 @@ class MainWindow(QWidget):
 
         # 加载
         for i in range(len(self.friendsBarList)):
-            self.newsListLayout.insertWidget(-1, self.friendsBarList[i])
+            self.newsListLayout.insertWidget(self.newsListLayout.count() - 1, self.friendsBarList[i])
 
         self.newsListLayout.update()
 
+    @Slot()
     def displayPartiesBar(self):
 
         # 清
@@ -537,7 +556,7 @@ class MainWindow(QWidget):
 
         # 加
         for i in range(len(self.partiesBarList)):
-            self.newsListLayout.insertWidget(-1, self.partiesBarList[i])
+            self.newsListLayout.insertWidget(self.newsListLayout.count() - 1, self.partiesBarList[i])
         
         self.newsListLayout.update()
 
@@ -548,7 +567,7 @@ class MainWindow(QWidget):
 
         response = dict()
         # 向服务器获取
-        while ():
+        while(True):
             try:
                 response = CT.request_contacts_list()
             except:
@@ -557,11 +576,12 @@ class MainWindow(QWidget):
             break
         
         # 解析服务器消息
-        if not (response['type'] != 'contacts_list'):
+        if response['type'] != 'contacts_list':
             return False
         
         # 将Contact转换为能直接用的ContactBar
         self.newsContactBarList = [contactToBar(x) for x in response['contacts']]
+        # self.newsContactBarList[0].printInfo()
 
         self.displayNewsContactBar()
         
@@ -580,7 +600,7 @@ class MainWindow(QWidget):
             break
 
         # 解析服务器消息
-        if not (response['type'] == 'friend_list'):
+        if response['type'] != 'friend_list':
             return False
         
         # 转换为Bar
@@ -601,7 +621,7 @@ class MainWindow(QWidget):
             break
 
         # 解析服务器消息
-        if not (response['type'] == 'group_list'):
+        if response['type'] != 'group_list':
             return False
         
         # 转换为Bar
