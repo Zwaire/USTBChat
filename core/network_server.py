@@ -43,12 +43,21 @@ class ChatServer:
                     break
 
                 msg_type = msg.get("type")
-
+                print(f"This is {msg_type} type message")
                 # 1. 注册请求
                 if msg_type == "register":
                     username = msg.get("username")
-                    code = msg.get("code")
-                    res = db.register(username, code)
+                    code = msg["code"]
+                    parts = code.split('$', 1)  # split(分隔符, 最大拆分次数)
+                    if len(parts) == 2:
+                        salt_hex = parts[0]  # 第一部分：盐值的十六进制字符串
+                        dk_hex = parts[1]    # 第二部分：派生密钥的十六进制字符串
+                    else:
+                        salt_hex = ""
+                        dk_hex = ""
+                        print("错误：拼接字符串格式不正确，缺少分隔符 $")
+
+                    res = db.register(username, dk_hex, salt_hex)
                     # status: 1为成功，0为已存在
                     conn.sendall(encode_msg({
                         "type": "register",

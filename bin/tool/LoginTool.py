@@ -89,7 +89,6 @@ class LoginWindowTool:
                 salt + PEPPER.encode('utf-8'),
                 100_000
         )
-
         return salt.hex() + '$' + dk.hex()
 
     @classmethod
@@ -124,7 +123,7 @@ class LoginWindowTool:
         encrypted = cls._pwd_encryption(_pwd)
         if not encrypted:
             return {"error": "empty password"}
-
+        
         # 构建发送到服务器的请求体
         request = {
             "type": "register",
@@ -134,6 +133,8 @@ class LoginWindowTool:
         }
 
         response = contact_tool._get_response(request)
+        print(response)
+        print("I am OK")
         if not response:
             return {"error": "no response from server"}
         else:

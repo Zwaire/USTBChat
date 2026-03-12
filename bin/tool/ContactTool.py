@@ -96,19 +96,14 @@ def _get_response(request: dict, timeout: float = 5.0) -> dict:
     finally:
         if _client and _client.callback == _temp_callback:
             _client.callback = original_callback
-
+    print(333333333)
     return response_holder
 
 # ── 服务端请求接口 ────────────────────────────────────────────
 
 def request_contacts_list() -> dict:
     """
-    请求会话列表。
-    服务器应返回 
-    {
-        "type":"contacts_list",
-        "contacts":[...] # Contact 列表
-    }
+    请求会话列表。 服务器应返回{ "type":"contacts_list","contacts":[...] # Contact 列表}
     """
     return dict(
         type="contacts_list",
@@ -118,13 +113,7 @@ def request_contacts_list() -> dict:
     # return _get_response({"type": "get_contacts_list", "username": _uid})
 
 def request_friend_list() -> dict:
-    """
-    请求好友列表。服务器应返回 
-    {
-        "type":"friend_list",
-        "friends":[...] # Friend 列表
-    }
-    """
+    """请求好友列表。服务器应返回 {"type":"friend_list","friends":[...] # Friend 列表}"""
     # return dict(
     #     type="friend_list",
     #     friends=[Friend(uid="10001", nickname="Alice")] +
@@ -167,13 +156,7 @@ def request_join_group(gid: str) -> dict:
     return _get_response({"type": "join_group", "username": _uid, "gid": gid})
 
 def request_leave_group(gid: str) -> dict:
-    """
-    发送退群请求。服务器应返回 
-    {
-        "type":"leave_group",
-        "status":0
-    }
-    """
+    """发送退群请求。服务器应返回 {"type":"leave_group","status":0}"""
     return _get_response({"type": "leave_group", "username": _uid, "gid": gid})
 
 def request_group_members(gid: str) -> dict:

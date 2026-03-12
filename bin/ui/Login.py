@@ -7,13 +7,13 @@ from PySide6.QtCore import Qt, Slot, QObject, Signal
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QLineEdit,
                                QStackedLayout, QMessageBox)
 from PySide6.QtCore import Qt, Slot
-
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
 from bin.MessageFormat import LoginInfo
 from bin.tool.LoginTool import LoginWindowTool as tool
 
 # 导入改造好的 ChatClient ，引入全局状态单例
 from core.network_client import ChatClient
+import bin.tool.ContactTool as ct
 
 class NetworkSignals(QObject):
     msg_received = Signal(dict)
@@ -55,7 +55,7 @@ class LoginWindow(QWidget):
         self.client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg))
         # 连接到服务器(用的本地服务器，这里写了本地回环地址)
         self.client.connect("127.0.0.1", 8888)
-
+        ct.on_login(self.client, "", "", [], [])  # 初始化 ContactTool 的客户端引用
         self.initUI()
 
     def initUI(self):
@@ -352,7 +352,6 @@ class LoginWindow(QWidget):
         except:
             self.warning("网络错误")
             return
-
         # 服务器信息处理
         if 'error' in serverReply.keys():
             self.warning("网络错误")
@@ -408,6 +407,7 @@ class LoginWindow(QWidget):
         '''
 
         QMessageBox.warning(self, "", text)
+        raise ValueError("this is a error")
         return
 
     @Slot()
