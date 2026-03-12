@@ -72,11 +72,6 @@ class ChatTool:
             unread=d['unread']
         )
     
-
-
-
-
-
 @dataclass
 class Friend:
     uid: str
