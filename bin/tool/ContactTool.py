@@ -114,12 +114,12 @@ def request_contacts_list() -> dict:
 
 def request_friend_list() -> dict:
     """请求好友列表。服务器应返回 {"type":"friend_list","friends":[...] # Friend 列表}"""
-    # return dict(
-    #     type="friend_list",
-    #     friends=[Friend(uid="10001", nickname="Alice")] +
-    #             [Friend(uid="10002", nickname="Bob")]
-    # )
-    return _get_response({"type": "get_friend_list", "username": _uid})
+    return dict(
+        type="friend_list",
+        friends=[Friend(uid="10001", nickname="Alice")] +
+                [Friend(uid="10002", nickname="Bob")]
+    )
+    # return _get_response({"type": "get_friend_list", "username": _uid})
 
 def request_group_list() -> dict:
     """

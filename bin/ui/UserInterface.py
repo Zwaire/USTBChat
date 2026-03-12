@@ -10,10 +10,10 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
+from PySide6.QtWidgets import (QApplication, QLayoutItem, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
                                QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit,
                                QStackedLayout)
-from PySide6.QtGui import QTextOption
+from PySide6.QtGui import QMouseEvent, QTextOption
 from PySide6.QtCore import Qt, Slot, QObject, Signal
 from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
 
@@ -81,6 +81,7 @@ class MainWindow(QWidget):
 
     class ContactBar(QWidget):
 
+        hasBeenClicked = Signal(str)
         
         Party = True
         Friend = False
@@ -190,7 +191,15 @@ class MainWindow(QWidget):
 
             self.objLastChatBar.setText(lastChat)
 
+        def mousePressEvent(self, event: QMouseEvent) -> None:
+
+            self.hasBeenClicked.emit(self.UID)
+
+            return super().mousePressEvent(event)
+
     class FriendBar(QWidget):
+
+        hasBeenClicked = Signal(str)
 
         def __init__(
                 self,
@@ -228,7 +237,15 @@ class MainWindow(QWidget):
         def modifyUserName(self, name: str):
             self.userName.setText(name)
 
+        def mousePressEvent(self, event: QMouseEvent) -> None:
+
+            self.hasBeenClicked.emit(self.UID)
+
+            return super().mousePressEvent(event)
+
     class PartyBar(QWidget):
+
+        hasBeenClicked = Signal(str)
 
         def __init__(
                 self,
@@ -266,20 +283,43 @@ class MainWindow(QWidget):
         def modifyPartyName(self, name: str):
             self.partyName.setText(name)
 
+        def mousePressEvent(self, event: QMouseEvent) -> None:
+
+            self.hasBeenClicked.emit(self.UID)
+
+            return super().mousePressEvent(event)
+
     class ChatBar(QWidget):
         '''
         显示在聊天区域的聊天块
         '''
 
-        def __init__(self, isSelf: bool):
+        def __init__(
+                self,
+                isSelf: bool,
+                senderUID: str,
+                senderNickName: str,
+                content: str,
+                time: str
+        ):
             '''
             Args:
                 isSelf(bool): 消息是否为自己发出的
+                senderUID(str): 发送者的UID
+                senderNickName(str): 发送者的昵称
+                content(str): 消息的内容
+                time(str): 发送的时间
             '''
             super().__init__()
 
             self.isSelf = isSelf
+            self.senderUID = senderUID,
+        
             self.initUI()
+
+            self.modifySenderID(senderNickName)
+            self.modifySendTime(UITool.format_msg_time(time))
+            self.modifyChatContent(content)
         
         def initUI(self):
 
@@ -341,6 +381,8 @@ class MainWindow(QWidget):
         self.newsContactBarList = []
         self.friendsBarList = []
         self.partiesBarList = []
+
+        self.cachedChatHistory = dict()
 
         # 分三个部分初始化界面
         self.initUI()
@@ -499,6 +541,8 @@ class MainWindow(QWidget):
 
         # 消息展示区域
         self.messageDisplaySection = Section((800, 418), Section.Extendable)
+        self.messageDisplayLayout = ClassicLayout.Vertical(constr=ClassicLayout.MinMax, margins=ClassicLayout.NoBorder, spacing=10)
+        self.messageDisplaySection.setLayout(self.messageDisplayLayout)
 
         # 消息输入区域
         self.messageInputSection = Section((800, 150), Section.Extendable)
@@ -598,7 +642,11 @@ class MainWindow(QWidget):
             return False
         
         # 将Contact转换为能直接用的ContactBar
-        self.newsContactBarList = [contactToBar(x) for x in response['contacts']]
+        self.newsContactBarList = []
+        for x in response['contacts']:
+            _ = contactToBar(x)
+            _.hasBeenClicked.connect(lambda uid = _.UID: self.showSpecificChatArea(uid))
+            self.newsContactBarList.append(_)
         # self.newsContactBarList[0].printInfo()
 
         self.displayNewsContactBar()
@@ -625,7 +673,11 @@ class MainWindow(QWidget):
             return False
         
         # 转换为Bar
-        self.friendsBarList = [friendToBar(x) for x in response['friends']]
+        # self.friendsBarList = [friendToBar(x) for x in response['friends']]
+        for x in response['friends']:
+            _ = friendToBar(x)
+            _.hasBeenClicked.connect(lambda uid = _.UID: self.showSpecificChatArea(uid))
+            self.friendsBarList.append(_)
 
         for i in range(len(self.friendsBarList)):
             self.friendsListLayout.insertWidget(self.friendsListLayout.count() - 1, self.friendsBarList[i])
@@ -649,13 +701,64 @@ class MainWindow(QWidget):
             return False
         
         # 转换为Bar
-        self.partiesBarList = [partyToBar(x) for x in response['groups']]
+        # self.partiesBarList = [partyToBar(x) for x in response['groups']]
+
+        for x in response['groups']:
+            _ = partyToBar(x)
+            _.hasBeenClicked.connect(lambda uid = _.UID: self.showSpecificChatArea(uid))
+            self.partiesBarList.append(_)
 
         for i in range(len(self.partiesBarList)):
             self.partiesListLayout.insertWidget(self.partiesListLayout.count() - 1, self.partiesBarList[i])
 
         return True
 
+    @Slot(str)
+    def showSpecificChatArea(self, UID: str):
+
+        import bin.tool.ContactTool as CTool
+
+        print("I am clicked")
+
+        # 清空聊天区域
+        wipeOutChildItemOfLayout(self.messageDisplayLayout)
+
+        # 缓存中不存在该UID, 则向服务器请求获取聊天记录
+        if not (UID in self.cachedChatHistory.keys()):
+            self.cachedChatHistory.update({UID: CTool.fetch_history(UID)})
+
+        # 向缓存中读取聊天记录
+        chatUpcoming = self.cachedChatHistory[UID]
+
+        # 将聊天记录转换为可使用的Qt组件
+        for i in range(len(chatUpcoming)):
+            _ = self.ChatBar(
+                isSelf=chatUpcoming[i].is_self,
+                senderUID=chatUpcoming[i].sender_uid,
+                senderNickName=chatUpcoming[i].sender_nickname,
+                content=chatUpcoming[i].content,
+                time=chatUpcoming[i].time
+            )
+
+
+            isSelfSend = _.isSelf
+
+            # 生成聊天栏布局
+
+            if isSelfSend:
+                chatRowLayout = ClassicLayout.Horizontal(ClassicLayout.RTop, ClassicLayout.Min, (5, 0, 5, 0), 5)
+                chatRowLayout.addStretch(1)
+                chatRowLayout.addWidget(_, 2, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
+            else:
+                chatRowLayout = ClassicLayout.Horizontal(ClassicLayout.LTop, ClassicLayout.Min, (5, 0, 5, 0), 5)
+                chatRowLayout.addWidget(_, 2, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+                chatRowLayout.addStretch(1)
+
+            # 将聊天布局添加至聊天区域
+            self.messageDisplayLayout.addLayout(chatRowLayout, 0)
+        
+        self.messageDisplayLayout.update()
+            
     # def getHistory
 
     @Slot(dict)
@@ -733,26 +836,67 @@ class MainWindow(QWidget):
         # else:
         #     QMessageBox.warning(self, "错误", "未连接到服务器！")
 
-def fetchHistoryChatAfterLogin(uid: str) -> Message:
-    '''
-    在登录之后第一次点击某个聊天时, 从服务器获取过往的聊天记录
-
-    Args:
-        uid(str): 聊天对象的UID
-    
-    Returns:
-        Message: 一个聊天记录结构, 这里不顺便转换成ChatBar的原因是节省内存空间, 当使用时再转换成ChatBar
-    '''
-
-    pass
-
-
 def cleanWidgetsInLayout(layout: QLayout, left: int = 0):
     '''清理布局中的组件, 但保留最后left数量的组件'''
 
     for i in range(layout.count() - left):
         _ = layout.takeAt(0)
-        # _.setParent(None)
+        # assert _ is MainWindow.ContactBar
+        _.deleteLater() # type: ignore
+
+def wipeOutChildItemOfLayout(layout: QLayout, delete_layout_itself: bool = False):
+    """
+    递归地清空一个布局及其所有嵌套子布局中的所有组件。
+
+    参数:
+        layout (QLayout): 要清空的根布局对象。
+        delete_layout_itself (bool): 清空内容后，是否也删除此布局对象本身。
+                                      注意：如果此布局是另一个布局的子项，或已设置给一个部件，
+                                      则通常不应将其删除（其父对象会管理它）。
+    """
+    if layout is None:
+        return
+
+    # 递归基线：当布局中不再有项时停止
+    while layout.count():
+        # 获取并移除最顶层的项
+        item: QLayoutItem = layout.takeAt(0)
+        if item is None:
+            continue
+
+        # 情况1：该项管理的是一个部件 (QWidget)
+        widget = item.widget()
+        if widget is not None:
+            # 从父部件中移除
+            widget.setParent(None)
+            # 安排安全删除
+            widget.deleteLater()
+            # 注意：item 本身（QLayoutItem）由 takeAt() 返回，Qt内部会管理其销毁
+            continue  # 此项处理完毕，继续下一项
+
+        # 情况2：该项管理的是一个嵌套的子布局 (QLayout)
+        sub_layout = item.layout()
+        if sub_layout is not None:
+            # 递归清空这个子布局
+            clear_layout_recursively(sub_layout, delete_layout_itself=True)
+            # 子布局已被清空，其管理的 item 也被 takeAt 移除
+            # 注意：此时 sub_layout 对象可能仍有父级，但已为空
+            continue
+
+        # 情况3：该项是一个空白/伸缩项 (QSpacerItem)
+        # 对于 addStretch() 等添加的空白项，只需将其从布局中移除。
+        # 被 takeAt 后，Qt 会负责清理这个 QSpacerItem。
+        # 因此这里没有 widget 或 sub_layout 需要处理。
+
+    # 可选：在清空所有内容后，是否删除此布局对象本身
+    if delete_layout_itself:
+        # 警告：只有在你明确创建了此布局，且它未被设置为任何部件的布局时，才可安全删除。
+        # 通常，对于通过 addLayout() 添加的子布局，不应在此处删除，因为其父布局管理其生命周期。
+        # 此处逻辑仅供参考，需根据实际情况谨慎使用。
+        layout.setParent(None)
+        # 注意：QLayout 没有 deleteLater() 方法，它继承自 QObject
+        # 如果此布局对象是独立创建的，且您确信需要删除，可做标记并由垃圾回收器处理。
+        # 更安全的做法是在函数外部管理顶级布局的生命周期。
 
 def contactToBar(contact: Contact) -> MainWindow.ContactBar:
     return MainWindow.ContactBar(
