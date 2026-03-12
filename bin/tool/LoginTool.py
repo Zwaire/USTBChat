@@ -53,6 +53,10 @@ class LoginWindowTool:
         return bool(_RE_UID.match(text))
     
     @classmethod
+    def _is_name_not_uid(cls, text: str) -> bool:
+        return (cls._validate_id(text) == True) and not cls._is_uid(text)
+
+    @classmethod
     def _pwd_encryption(cls, text: str) -> str:
         """
         对密码进行派生哈希处理并返回字符串结果。
