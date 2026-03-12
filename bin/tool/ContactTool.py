@@ -129,11 +129,11 @@ def request_group_list() -> dict:
         "groups":[...]  # Group 列表
     }
     """
-    # return dict(
-    #     type="group_list",
-    #     groups=[Group(gid="g123", name="Study Group")]
-    # )
-    return _get_response({"type": "get_group_list", "username": _uid})
+    return dict(
+        type="group_list",
+        groups=[Group(gid="g123", name="Study Group")]
+    )
+    # return _get_response({"type": "get_group_list", "username": _uid})
 
 def request_add_friend(target_uid: str) -> dict:
     """
