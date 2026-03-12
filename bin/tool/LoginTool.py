@@ -5,6 +5,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from bin.MessageFormat import LoginInfo
 import core.protocol as protocol
+import ContactTool as contact_tool
+
 
 MAX_LEN = 20
 _RE_UID      = re.compile(r'^\d+$')
@@ -89,17 +91,6 @@ class LoginWindowTool:
 
         return salt.hex() + '$' + dk.hex()
 
-    def _get_response(self, request: dict) -> dict:
-        '''
-        发送请求到服务器，并获取响应
-        Args:
-            request (dict): 待发送的请求数据，包含请求类型、用户名、IP等信息
-        Returns:
-            dict: 服务器返回的响应数据，包含是否成功、错误信息等
-        '''
-
-        return
-
     def _request_pwd_find(self, id: str) -> dict:
         ''' 向服务器发送请求，发送id进行查验 '''
         request = {
@@ -107,7 +98,7 @@ class LoginWindowTool:
             "username": id,
             "ip": LoginInfo._get_localip()
         }
-        response = self._get_response(request)
+        response = contact_tool._get_response(request)
         return response  
 
     def _send_login_info(self, info: LoginInfo) -> dict | bool:
@@ -136,7 +127,7 @@ class LoginWindowTool:
             "ip": LoginInfo._get_localip()
         }
 
-        response = self._get_response(request)
+        response = contact_tool._get_response(request)
         if not response:
             return {"error": "no response from server"}
         else:

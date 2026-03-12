@@ -31,6 +31,7 @@ class AppState:
         self.contacts: list[Contact] = []
         self.server_ip: str = ""
         self.server_port: int = 0
+        self.client = None   # ChatClient 实例，连接成功后由外部赋值
 
     # ── 登录后初始化 ──────────────────────────────────────────
 
