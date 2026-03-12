@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from bin.state.models import Friend, Group, Message, Contact
+from bin.state.ChatModels import Friend, Group, Message, Contact
 import bin.state.MessageStore as store
 
 

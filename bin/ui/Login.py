@@ -4,13 +4,22 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from pathlib import Path
+from PySide6.QtCore import Qt, Slot, QObject, Signal
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QLineEdit,
                                QStackedLayout, QMessageBox)
 from PySide6.QtCore import Qt, Slot
 
 from CommonCouple import TextInput, Button, ClassicLayout, Fonts
-from bin.MessageFormat import LoginInfo
+from bin.Message import LoginInfo
 from bin.tool.LoginTool import LoginWindowTool as tool
+
+# 导入改造好的 ChatClient ，引入全局状态单例
+from core.network_client import ChatClient
+from bin.state.AppState import AppState  # 【
+
+# 定义一个信号类，用于安全地将子线程收到的网络消息抛给主线程 UI
+class NetworkSignals(QObject):
+    msg_received = Signal(dict)
 
 class LoginWindow(QWidget):
     '''
@@ -40,6 +49,15 @@ class LoginWindow(QWidget):
         self.setWindowTitle("登录")                # 窗口标题
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setFixedSize(600, 320)               # 窗口尺寸
+
+        # 初始化网络模块
+        self.signals = NetworkSignals()
+        self.signals.msg_received.connect(self.handle_server_response)
+        
+        # 将ChatClient收到的消息通过信号发送到主线程
+        self.client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg))
+        # 连接到服务器(用的本地服务器，这里写了本地回环地址)
+        self.client.connect("127.0.0.1", 8888)
 
         self.initUI()
 
@@ -203,6 +221,38 @@ class LoginWindow(QWidget):
         # 发送密码找回请求, 返回值是服务器的返回消息
         # <————————————————————————————————————>
 
+    
+    def handle_server_response(self, msg: dict):
+        '''
+        用于处理从服务器返回的响应包 (此函数运行在主线程)
+        '''
+        msg_type = msg.get("type")
+        status = msg.get("status")
+        
+        if msg_type == "register":
+            if status == True:
+                QMessageBox.information(self, "成功", "注册成功，请登录！")
+                self.switchToLogin()
+            else:
+                self.warning(f"注册失败: {msg.get('warnings', '未知错误')}")
+                
+        elif msg_type == "login":
+            if status == True:
+                # 适配 AppState：登录成功后初始化全局状态和本地持久化目录
+                uid = msg.get("uid", self.packLoginInfo().ID)
+                nickname = msg.get("nickname", uid)
+                friends = msg.get("friends", [])  # 服务器传来的好友列表
+                groups = msg.get("groups", [])    # 服务器传来的群组列表
+                
+                # 初始化单例
+                AppState().on_login(uid, nickname, friends, groups)
+
+                QMessageBox.information(self, "成功", "登录成功！")
+                self.enterMainInterface()
+            else:
+                self.warning(f"登录失败: {msg.get('warnings', '账号或密码错误')}")
+
+
     @Slot()
     def loginAccount(self) -> bool:
         '''
@@ -212,20 +262,40 @@ class LoginWindow(QWidget):
         Returns:
             bool: 是否登录成功
         '''
-
+        
+        
         # 打包用户输入的信息
         info = self.packLoginInfo()
 
-        # 检查输入信息是否合法
-        result = tool._validate_id(info.ID)
-        if result != True:
-            self.warning(str(result))
-            return False
+        # # 检查输入信息是否合法
+        # result = tool._validate_id(info.ID)
+        # if result != True:
+        #     self.warning(str(result))
+        #     return False
         
-        result = tool._validate_password(info.Password)
-        if result != True:
-            self.warning(str(result))
+        # result = tool._validate_password(info.Password)
+        # if result != True:
+        #     self.warning(str(result))
+        #     return False
+        
+        
+        # 验证合法性
+        if tool._validate_id(info.ID) != True or tool._validate_password(info.Password) != True:
+            self.warning("账号或密码格式不正确")
             return False
+            
+        # 打包成 《通信接口.md》 规定的格式发送给服务器
+        login_packet = {
+            "type": "login",
+            "username": info.ID,
+            "code": info.Password,
+            "ip": info.IP
+        }
+        
+        if not self.client.send_data(login_packet):
+            self.warning("无法连接到服务器！")
+            return False
+        return True
         
         # 向服务器发送登录信息
         # [CPD]
@@ -241,7 +311,7 @@ class LoginWindow(QWidget):
         # <——————————————————————————————————————————————>
 
         # 服务器信息处理
-        return False
+        
 
     @Slot()
     def registerAccount(self):
@@ -281,13 +351,36 @@ class LoginWindow(QWidget):
 
         # 服务器信息处理
 
+        # 构造注册报文并发送
+        register_packet = {
+            "type": "register",
+            "username": info.ID,
+            "code": info.Password,
+            "ip": info.IP
+        }
+        
+        if not self.client.send_data(register_packet):
+            self.warning("无法连接到服务器！")
+            return False
+
     def enterMainInterface(self):
         '''
         该函数仅在loginAccount函数返回True后执行
         实现登录成功后, 关闭登录界面, 打开主界面的功能
         '''
 
-        pass
+        # pass
+
+        '''登录成功后，关闭登录界面，打开主界面'''
+        # 注意：在此处实例化 MainWindow 时，应将 self.client 传递给它
+        # 并在 MainWindow 中将 self.client.callback 重新指向 MainWindow 内部的方法
+        # 以便在 MainWindow 中收到信息时调用 AppState().add_message()
+        
+        # 假设 MainWindow 已支持传入 client
+        from bin.ui.UserInterface import MainWindow
+        self.main_window = MainWindow(client=self.client) 
+        self.main_window.show()
+        self.close()
 
     def warning(self, text: str):
         '''
