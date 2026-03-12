@@ -142,6 +142,7 @@ class LoginWindowTool:
     def _send_login_info(cls, info: LoginInfo) -> dict:
         ''' 
         向服务器发送登录信息，错误会返回名为"error"的键，成功则返回服务器响应的字典
+        [WFDebug]
         '''
         _pwd = info.Password
 

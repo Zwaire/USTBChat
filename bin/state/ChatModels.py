@@ -15,28 +15,8 @@ class Message:
     sender_uid: str
     sender_nickname: str
     content: str
-    time: str           # 格式由服务器决定，直接存字符串
-    is_self: bool       # 是否是自己发的
-
-    def message_to_dict(self) -> dict:
-        return {
-            "sender_uid":       self.sender_uid,
-            "sender_nickname":  self.sender_nickname,
-            "content":          self.content,
-            "time":             self.time,
-            "is_self":          self.is_self,
-        }
-
-    @staticmethod
-    def dict_to_message(d: dict) -> "Message":
-        return Message(
-            sender_uid=d["sender_uid"],
-            sender_nickname=d["sender_nickname"],
-            content=d["content"],
-            time=d["time"],
-            is_self=d["is_self"],
-        )
-
+    time: str           
+    is_self: bool      
 
 @dataclass
 class Contact:
@@ -47,13 +27,11 @@ class Contact:
     last_message: str = ""
     last_time: str = ""
     unread: int = 0
-
-
+    
 @dataclass
 class Friend:
     uid: str
     nickname: str
-
 
 @dataclass
 class Group:

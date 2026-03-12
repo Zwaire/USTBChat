@@ -377,18 +377,6 @@ class LoginWindow(QWidget):
             self.warning("服务器返回了错误的状态码")
             return
 
-        # 构造注册报文并发送
-        register_packet = {
-            "type": "register",
-            "username": info.ID,
-            "code": info.Password,
-            "ip": info.IP
-        }
-        
-        if not self.client.send_data(register_packet):
-            self.warning("无法连接到服务器！")
-            return False
-
     def enterMainInterface(self):
         '''
         该函数仅在loginAccount函数返回True后执行
