@@ -1,0 +1,51 @@
+私发：
+curl -X POST "http://192.168.1.1:5001/ai/reply" \
+-H "Content-Type: application/json" \
+-d '{
+  "type": "ai_reply",
+  "username": "张三",
+  "friendname": "李四",
+  "message": "@智能助手 什么是局域网",
+  "recent_messages": [
+    {"username": "张三", "message": "你好"},
+    {"username": "张三", "message": "@智能助手 什么是局域网"}
+  ]
+}'
+群发：
+curl -X POST "http://192.168.1.1:5001/ai/reply" \
+-H "Content-Type: application/json" \
+-d '{
+  "type": "ai_reply",
+  "username": "张三",
+  "groupname": "group_1",
+  "groupmessage": "@智能助手 什么是局域网",
+  "recent_messages": [
+    {"username": "李四", "message": "今天在做课设"},
+    {"username": "王五", "message": "服务器还没调通"},
+    {"username": "张三", "message": "@智能助手 什么是局域网"}
+  ]
+}'
+总结：
+curl -X POST "http://192.168.1.1:5001/ai/summarize" \
+-H "Content-Type: application/json" \
+-d '{
+  "type": "ai_summary",
+  "username": "张三",
+  "groupname": "group_1",
+  "filename": "报告.txt",
+  "content": "本文件主要介绍局域网聊天室系统的设计目标、模块划分、服务器通信流程以及智能助手的实现思路。",
+  "groupmessage": "@智能助手 帮我总结这个文件"
+}'
+氛围：
+curl -X POST "http://192.168.1.1:5001/ai/atmosphere" \
+-H "Content-Type: application/json" \
+-d '{
+  "type": "ai_atmosphere",
+  "groupname": "group_1",
+  "recent_messages": [
+    {"username": "李四", "message": "终于跑通了"},
+    {"username": "王五", "message": "太好了哈哈哈"},
+    {"username": "张三", "message": "今晚可以睡觉了"}
+  ]
+}'
+

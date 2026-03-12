@@ -1,5 +1,4 @@
-def build_reply_prompt(chat_type: str, current_text: str, recent_text: str, max_chars: int = 80) -> str:
-    scene = "私聊" if chat_type == "private" else "群聊"
+def build_reply_prompt(scene: str, current_text: str, recent_text: str, max_chars: int = 80) -> str:
     return f"""你是聊天系统中的智能助手。
 当前场景：{scene}
 
@@ -20,8 +19,7 @@ def build_reply_prompt(chat_type: str, current_text: str, recent_text: str, max_
 """
 
 
-def build_summary_prompt(chat_type: str, filename: str, content: str, max_chars: int = 140) -> str:
-    scene = "私聊" if chat_type == "private" else "群聊"
+def build_summary_prompt(scene: str, filename: str, content: str, max_chars: int = 140) -> str:
     return f"""你是聊天系统中的智能助手。
 当前场景：{scene}
 
@@ -58,4 +56,3 @@ afraid
 最近消息：
 {recent_text}
 """
-

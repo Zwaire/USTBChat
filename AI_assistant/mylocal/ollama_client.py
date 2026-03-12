@@ -13,6 +13,7 @@ from config import (
     MAX_FILE_CHARS,
     TRIGGER_NAME,
 )
+
 from prompts import (
     build_reply_prompt,
     build_summary_prompt,
@@ -34,11 +35,7 @@ def _extract_msg_text(item: dict) -> str:
     """
     if not isinstance(item, dict):
         return ""
-    return str(
-        item.get("message")
-        or item.get("groupmessage")
-        or ""
-    ).strip()
+    return str(item.get("message") or item.get("groupmessage") or "").strip()
 
 
 def _extract_username(item: dict) -> str:
@@ -49,11 +46,7 @@ def _extract_username(item: dict) -> str:
     """
     if not isinstance(item, dict):
         return "用户"
-    return str(
-        item.get("username")
-        or item.get("sender_name")
-        or "用户"
-    ).strip()
+    return str(item.get("username") or item.get("sender_name") or "用户").strip()
 
 
 def _join_recent_messages(recent_messages: list, max_chars: int = MAX_CONTEXT_CHARS) -> str:
@@ -74,24 +67,27 @@ def _join_recent_messages(recent_messages: list, max_chars: int = MAX_CONTEXT_CH
 
 
 def _call_ollama(prompt: str, num_predict: int = 128) -> str:
-    url = f"http://{OLLAMA_HOST}:{OLLAMA_PORT}/api/chat"
-    payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "stream": False,
-        "keep_alive": -1,
-        "options": {
-            "temperature": 0.2,
-            "num_predict": num_predict,
+    try:
+        url = f"http://{OLLAMA_HOST}:{OLLAMA_PORT}/api/chat"
+        payload = {
+            "model": MODEL_NAME,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "stream": False,
+            "keep_alive": -1,
+            "options": {
+                "temperature": 0.2,
+                "num_predict": num_predict,
+            }
         }
-    }
 
-    resp = requests.post(url, json=payload, timeout=REQUEST_TIMEOUT)
-    resp.raise_for_status()
-    data = resp.json()
-    return data.get("message", {}).get("content", "").strip()
+        resp = requests.post(url, json=payload, timeout=REQUEST_TIMEOUT)
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("message", {}).get("content", "").strip()
+    except Exception:
+        return ""
 
 
 def _normalize_emotion(raw: str) -> str:
@@ -102,15 +98,9 @@ def _normalize_emotion(raw: str) -> str:
     mapping = {
         "平静": "calm",
         "愤怒": "angry",
-        "生气": "angry",
         "开心": "happy",
-        "高兴": "happy",
-        "快乐": "happy",
         "悲伤": "sad",
-        "伤心": "sad",
         "害怕": "afraid",
-        "恐惧": "afraid",
-        "紧张": "afraid",
     }
     return mapping.get(raw, DEFAULT_EMOTION)
 
@@ -129,7 +119,7 @@ def clean_trigger_text(text: str) -> str:
     return text
 
 
-def generate_reply(chat_type: str, current_text: str, recent_messages: list | None = None) -> str:
+def generate_reply(scene: str, current_text: str, recent_messages: list | None = None) -> str:
     current_text = (current_text or "").strip()
     if not current_text:
         return "信息不足"
@@ -140,10 +130,10 @@ def generate_reply(chat_type: str, current_text: str, recent_messages: list | No
 
     recent_text = _join_recent_messages(recent_messages or [])
     prompt = build_reply_prompt(
-        chat_type=chat_type,
+        scene=scene,
         current_text=question,
         recent_text=recent_text,
-        max_chars=MAX_REPLY_CHARS
+        max_chars=MAX_REPLY_CHARS,
     )
 
     reply = _call_ollama(prompt, num_predict=128)
@@ -153,7 +143,7 @@ def generate_reply(chat_type: str, current_text: str, recent_messages: list | No
     return reply[:MAX_REPLY_CHARS]
 
 
-def summarize_file(chat_type: str, filename: str, content: str) -> str:
+def summarize_file(scene: str, filename: str, content: str) -> str:
     filename = (filename or "未知文件").strip()
     content = (content or "").strip()
 
@@ -163,10 +153,10 @@ def summarize_file(chat_type: str, filename: str, content: str) -> str:
     content = _truncate_text(content, MAX_FILE_CHARS)
 
     prompt = build_summary_prompt(
-        chat_type=chat_type,
+        scene=scene,
         filename=filename,
         content=content,
-        max_chars=MAX_SUMMARY_CHARS
+        max_chars=MAX_SUMMARY_CHARS,
     )
 
     summary = _call_ollama(prompt, num_predict=180)
@@ -178,6 +168,7 @@ def summarize_file(chat_type: str, filename: str, content: str) -> str:
 
 def analyze_atmosphere(recent_messages: list | None = None) -> dict:
     recent_messages = recent_messages or []
+
     if not recent_messages:
         emotion = DEFAULT_EMOTION
         return {
