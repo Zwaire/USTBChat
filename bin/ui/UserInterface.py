@@ -82,12 +82,13 @@ class MainWindow(QWidget):
         Party = True
         Friend = False
 
-        def __init__(self, type: bool, ID: str = "DefaultID", lastTime: str = "00:00", lastChat: str = "DefaultChat"):
+        def __init__(self, type: bool, UID: str, ID: str = "DefaultID", lastTime: str = "00:00", lastChat: str = "DefaultChat"):
             '''
             初始化聊天列表对象
 
             Args:
                 type(bool): 该聊天列表对象是否为群聊
+                UID(str): 群组或私聊UID
                 ID(str): 对象的名称
                 lastTime(str): 最新消息时间
                 lastChat(str): 最新消息
@@ -95,6 +96,7 @@ class MainWindow(QWidget):
             super().__init__()
 
             self.Type = type
+            self.UID = UID
             self.initUI()
             self.modifyID(ID)
             self.modifyLastTime(lastTime)
