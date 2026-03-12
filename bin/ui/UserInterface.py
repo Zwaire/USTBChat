@@ -82,7 +82,7 @@ class MainWindow(QWidget):
         Party = True
         Friend = False
 
-        def __init__(self, type: bool, UID: str, ID: str = "DefaultID", lastTime: str = "00:00", lastChat: str = "DefaultChat"):
+        def __init__(self, type: bool, UID: str, ID: str = "DefaultID", isRead: bool = True, lastTime: str = "00:00", lastChat: str = "DefaultChat"):
             '''
             初始化聊天列表对象
 
@@ -90,6 +90,7 @@ class MainWindow(QWidget):
                 type(bool): 该聊天列表对象是否为群聊
                 UID(str): 群组或私聊UID
                 ID(str): 对象的名称
+                isRead(bool): 是否已读
                 lastTime(str): 最新消息时间
                 lastChat(str): 最新消息
             '''
@@ -97,6 +98,7 @@ class MainWindow(QWidget):
 
             self.Type = type
             self.UID = UID
+            self.isRead = isRead
             self.initUI()
             self.modifyID(ID)
             self.modifyLastTime(lastTime)
