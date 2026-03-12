@@ -11,7 +11,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
-                               QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit)
+                               QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit,
+                               QStackedLayout)
 from PySide6.QtGui import QTextOption
 from PySide6.QtCore import Qt, Slot, QObject, Signal
 from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
@@ -187,10 +188,6 @@ class MainWindow(QWidget):
             '''修改最后一条消息'''
 
             self.objLastChatBar.setText(lastChat)
-
-        # # def printInfo(self):
-        #     print("ObjName: ", self.objNameBar.text())
-        #     print("Last Message: ", self.objLastChatBar.text())
 
     class FriendBar(QWidget):
 
@@ -391,7 +388,10 @@ class MainWindow(QWidget):
         self.partiesButton = Button("P", "群聊", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
 
         # 消息列表区域
+        self.messageListSection = Section((200, 538), Section.VExtendable)
         self.newsListSection = Section((200, 538), Section.VExtendable)
+        self.friendsListSection = Section((200, 538), Section.VExtendable)
+        self.partiesListSection = Section((200, 538), Section.VExtendable)
         # 从本地读取已经存在的消息列表
         # <————————————————————————————————>
         # [NTC]
@@ -447,10 +447,39 @@ class MainWindow(QWidget):
 
         # 消息列表区域
         self.scrollableNewsList = QScrollArea()
+        self.scrollableFriendsList = QScrollArea()
+        self.scrollablePartiesList = QScrollArea()
         self.scrollableNewsList.setWidgetResizable(True)
+        self.scrollableFriendsList.setWidgetResizable(True)
+        self.scrollablePartiesList.setWidgetResizable(True)
+
         self.newsListLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
         self.newsListLayout.addStretch(1)
         self.newsListSection.setLayout(self.newsListLayout)
+        self.scrollableNewsList.setWidget(self.newsListSection)
+
+        self.friendsListLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
+        self.friendsListLayout.addStretch(1)
+        self.friendsListSection.setLayout(self.friendsListLayout)
+        self.scrollableFriendsList.setWidget(self.friendsListSection)
+
+        self.partiesListLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
+        self.partiesListLayout.addStretch(1)
+        self.partiesListSection.setLayout(self.partiesListLayout)
+        self.scrollablePartiesList.setWidget(self.partiesListSection)
+
+        self.switchableSection = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
+        self.switchableLayout = QStackedLayout()
+        self.switchableLayout.setSizeConstraint(ClassicLayout.MinMax)
+        self.switchableLayout.setContentsMargins(0, 0, 0, 0)
+        self.switchableLayout.setSpacing(0)
+
+        self.switchableLayout.addWidget(self.newsListSection)
+        self.switchableLayout.addWidget(self.friendsListSection)
+        self.switchableLayout.addWidget(self.partiesListSection)
+
+        # 整个消息显示区域
+        self.messageListSection.setLayout(self.switchableLayout)
 
         # 整个左边栏区域
         self.leftSideBarSection = Section((200, 618), Section.VExtendable)
@@ -459,7 +488,7 @@ class MainWindow(QWidget):
         self.leftSideBarLayout.addWidget(Separator(width=1), 0)
         self.leftSideBarLayout.addWidget(self.switchButtonSection, 0)
         self.leftSideBarLayout.addWidget(Separator(width=1), 0)
-        self.leftSideBarLayout.addWidget(self.newsListSection, 1)
+        self.leftSideBarLayout.addWidget(self.messageListSection, 1)
         self.leftSideBarSection.setLayout(self.leftSideBarLayout)
 
     def applyMidLayout(self):
@@ -527,37 +556,25 @@ class MainWindow(QWidget):
     def displayNewsContactBar(self):
         '''将左侧边栏下方改为显示最新消息'''
 
-        # 清空左侧边栏
-        cleanWidgetsInLayout(self.newsListLayout, 1)
+        # 切换显示区域
+        self.switchableLayout.setCurrentIndex(0)
 
-        # 加载
-        for i in range(len(self.newsContactBarList)):
-            self.newsListLayout.insertWidget(self.newsListLayout.count() - 1, self.newsContactBarList[i])
-        
         self.newsListLayout.update()
 
     @Slot()
     def displayFriendsBar(self):
 
-        # 清空左侧边栏
-        cleanWidgetsInLayout(self.newsListLayout, 1)
-
-        # 加载
-        for i in range(len(self.friendsBarList)):
-            self.newsListLayout.insertWidget(self.newsListLayout.count() - 1, self.friendsBarList[i])
+        # 切换显示区域
+        self.switchableLayout.setCurrentIndex(1)
 
         self.newsListLayout.update()
 
     @Slot()
     def displayPartiesBar(self):
 
-        # 清
-        cleanWidgetsInLayout(self.newsListLayout, 1)
+        # 切换显示区域
+        self.switchableLayout.setCurrentIndex(2)
 
-        # 加
-        for i in range(len(self.partiesBarList)):
-            self.newsListLayout.insertWidget(self.newsListLayout.count() - 1, self.partiesBarList[i])
-        
         self.newsListLayout.update()
 
     def initContactList(self) -> bool:
@@ -584,6 +601,9 @@ class MainWindow(QWidget):
         # self.newsContactBarList[0].printInfo()
 
         self.displayNewsContactBar()
+
+        for i in range(len(self.newsContactBarList)):
+            self.newsListLayout.insertWidget(self.newsListLayout.count() - 1, self.newsContactBarList[i])
         
         return True
 
@@ -606,6 +626,9 @@ class MainWindow(QWidget):
         # 转换为Bar
         self.friendsBarList = [friendToBar(x) for x in response['friends']]
 
+        for i in range(len(self.friendsBarList)):
+            self.friendsListLayout.insertWidget(self.friendsListLayout.count() - 1, self.friendsBarList[i])
+
         return True
 
     def getGroupsListFromServer(self) -> bool:
@@ -626,6 +649,9 @@ class MainWindow(QWidget):
         
         # 转换为Bar
         self.partiesBarList = [partyToBar(x) for x in response['groups']]
+
+        for i in range(len(self.partiesBarList)):
+            self.partiesListLayout.insertWidget(self.partiesListLayout.count() - 1, self.partiesBarList[i])
 
         return True
 
@@ -708,7 +734,8 @@ def cleanWidgetsInLayout(layout: QLayout, left: int = 0):
     '''清理布局中的组件, 但保留最后left数量的组件'''
 
     for i in range(layout.count() - left):
-        layout.takeAt(0)
+        _ = layout.takeAt(0)
+        # _.setParent(None)
 
 def contactToBar(contact: Contact) -> MainWindow.ContactBar:
     return MainWindow.ContactBar(
