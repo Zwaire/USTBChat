@@ -256,18 +256,7 @@ class MainWindow(QWidget):
         # 主窗口属性预设
         self.setWindowTitle("USTBChat")
         
-        # 接管网络客户端
-        # self.client = client
-        # if self.client:
-        #     # 初始化信号
-        #     self.signals = MainSignals()
-        #     self.signals.msg_received.connect(self.process_network_message)
-            
-        #     # 将 client 的回调函数重定向到 MainWindow 的信号
-        #     # 这样收到新消息就不会再发给 LoginWindow 了，而是发给主界面
-        #     self.client.callback = lambda msg: self.signals.msg_received.emit(msg)
-
-
+        self.newsContactBarList = []
 
         # 分三个部分初始化界面
         self.initUI()
@@ -435,6 +424,18 @@ class MainWindow(QWidget):
         self.rightSideBarLayout.addWidget(self.partyMemberSection, 0)
         self.rightSideBarSection.setLayout(self.rightSideBarLayout)
     
+    def displayNewsContactBar(self):
+        '''将左侧边栏下方改为显示最新消息'''
+
+        # 清空左侧边栏
+        cleanWidgetsInLayout(self.newsListLayout, 1)
+
+        # 加载
+        for i in range(len(self.newsContactBarList)):
+            self.newsListLayout.insertWidget(-1, self.newsContactBarList[i])
+        
+        self.newsListLayout.update()
+
     def initContactList(self) -> bool:
         '''登录后, 从服务器获取消息对象列表, 并显示在左侧边栏'''
 
@@ -455,12 +456,10 @@ class MainWindow(QWidget):
             return False
         
         # 将Contact转换为能直接用的ContactBar
-        contactBarList = [contactToBar(x) for x in response['contacts']]
+        self.newsContactBarList = [contactToBar(x) for x in response['contacts']]
 
-        for i in range(len(contactBarList)):
-            self.newsListLayout.insertWidget(-1, contactBarList[i])
+        self.displayNewsContactBar()
         
-        self.newsListLayout.update()
         return True
 
     @Slot(dict)
@@ -542,6 +541,12 @@ class MainWindow(QWidget):
         #     print(f"成功发送给 {target_friend}: {text}")
         # else:
         #     QMessageBox.warning(self, "错误", "未连接到服务器！")
+
+def cleanWidgetsInLayout(layout: QLayout, left: int = 0):
+    '''清理布局中的组件, 但保留最后left数量的组件'''
+
+    for i in range(layout.count() - left):
+        layout.takeAt(0)
 
 def contactToBar(contact: Contact) -> MainWindow.ContactBar:
     return MainWindow.ContactBar(
