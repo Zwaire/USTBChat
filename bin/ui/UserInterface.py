@@ -18,7 +18,7 @@ from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
 
 # 新增引入状态管理和消息模型
 # from bin.state.AppState import AppState
-from bin.state.ChatModels import Message, Contact
+from bin.state.ChatModels import Message, Contact, Friend, Group
 from bin.tool.LoginTool import LoginWindowTool as tool
 from bin.tool.UserInterfaceTool import UserInterfaceTool as UITool
 
@@ -79,6 +79,7 @@ class MainWindow(QWidget):
     '''
 
     class ContactBar(QWidget):
+
         
         Party = True
         Friend = False
@@ -185,6 +186,75 @@ class MainWindow(QWidget):
             '''修改最后一条消息'''
 
             self.objLastChatBar.setText(lastChat)
+
+    class FriendBar(QWidget):
+
+        def __init__(
+                self,
+                UID: str,
+                ID: str
+        ):
+            self.UID = UID
+
+            self.initUI()
+            self.modifyUserName(ID)
+
+        def initUI(self):
+            
+            self.creWidgets()
+            self.applyLayout()
+
+        def creWidgets(self):
+
+            # 名称
+            self.userName = QLabel()
+            self.userName.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+            self.userName.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            self.userName.setFixedHeight(30)
+
+        def applyLayout(self):
+
+            self.userNameLayout = ClassicLayout.Vertical(ClassicLayout.Center, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
+            self.userNameLayout.addWidget(self.userName, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+            self.setLayout(self.userNameLayout)
+
+        def modifyUserName(self, name: str):
+            self.userName.setText(name)
+
+    class PartyBar(QWidget):
+
+        def __init__(
+                self,
+                UID: str,
+                ID: str
+        ):
+            self.UID = UID
+
+            self.initUI()
+            self.modifyPartyName(ID)
+
+        def initUI(self):
+            
+            self.creWidgets()
+            self.applyLayout()
+
+        def creWidgets(self):
+
+            # 名称
+            self.partyName = QLabel()
+            self.partyName.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+            self.partyName.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            self.partyName.setFixedHeight(30)
+
+        def applyLayout(self):
+
+            self.partyNameLayout = ClassicLayout.Vertical(ClassicLayout.Center, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
+            self.partyNameLayout.addWidget(self.partyName, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+            self.setLayout(self.partyNameLayout)
+
+        def modifyPartyName(self, name: str):
+            self.partyName.setText(name)
+
     class ChatBar(QWidget):
         '''
         显示在聊天区域的聊天块
@@ -257,6 +327,8 @@ class MainWindow(QWidget):
         self.setWindowTitle("USTBChat")
         
         self.newsContactBarList = []
+        self.friendsBarList = []
+        self.partiesBarList = []
 
         # 分三个部分初始化界面
         self.initUI()
@@ -278,6 +350,8 @@ class MainWindow(QWidget):
         self.mainLayout.addWidget(Separator(Separator.Vertical, width=1))
         self.mainLayout.addWidget(self.rightSideBarSection, 0)
         self.setLayout(self.mainLayout)
+
+        self.initContactList()
 
         # 新增绑定按钮交互事件
         self.slotsConnect()
@@ -424,6 +498,15 @@ class MainWindow(QWidget):
         self.rightSideBarLayout.addWidget(self.partyMemberSection, 0)
         self.rightSideBarSection.setLayout(self.rightSideBarLayout)
     
+    def slotsConnect(self):
+        '''绑定UI交互事件'''
+        # 将“发送”按钮的点击事件连接到 send_message 函数
+        self.messageSendButton.clicked.connect(lambda checked: self.send_message)
+
+        self.newsButton.clicked.connect(lambda checked: self.displayNewsContactBar())
+        self.friendsButton.clicked.connect(lambda checked: self.displayFriendsBar())
+        self.partiesButton.clicked.connect(lambda checked: self.displayPartiesBar())
+
     def displayNewsContactBar(self):
         '''将左侧边栏下方改为显示最新消息'''
 
@@ -433,6 +516,28 @@ class MainWindow(QWidget):
         # 加载
         for i in range(len(self.newsContactBarList)):
             self.newsListLayout.insertWidget(-1, self.newsContactBarList[i])
+        
+        self.newsListLayout.update()
+
+    def displayFriendsBar(self):
+
+        # 清空左侧边栏
+        cleanWidgetsInLayout(self.newsListLayout, 1)
+
+        # 加载
+        for i in range(len(self.friendsBarList)):
+            self.newsListLayout.insertWidget(-1, self.friendsBarList[i])
+
+        self.newsListLayout.update()
+
+    def displayPartiesBar(self):
+
+        # 清
+        cleanWidgetsInLayout(self.newsListLayout, 1)
+
+        # 加
+        for i in range(len(self.partiesBarList)):
+            self.newsListLayout.insertWidget(-1, self.partiesBarList[i])
         
         self.newsListLayout.update()
 
@@ -452,7 +557,7 @@ class MainWindow(QWidget):
             break
         
         # 解析服务器消息
-        if not response['type'] != 'contacts_list':
+        if not (response['type'] != 'contacts_list'):
             return False
         
         # 将Contact转换为能直接用的ContactBar
@@ -460,6 +565,48 @@ class MainWindow(QWidget):
 
         self.displayNewsContactBar()
         
+        return True
+
+    def getFriendsListFromServer(self) -> bool:
+
+        import bin.tool.ContactTool as CT
+
+        while(True):
+            try:
+                response = CT.request_friend_list()
+            except:
+                continue
+
+            break
+
+        # 解析服务器消息
+        if not (response['type'] == 'friend_list'):
+            return False
+        
+        # 转换为Bar
+        self.friendsBarList = [friendToBar(x) for x in response['friends']]
+
+        return True
+
+    def getGroupsListFromServer(self) -> bool:
+
+        import bin.tool.ContactTool as CT
+
+        while(True):
+            try:
+                response = CT.request_group_list()
+            except:
+                continue
+
+            break
+
+        # 解析服务器消息
+        if not (response['type'] == 'group_list'):
+            return False
+        
+        # 转换为Bar
+        self.partiesBarList = [partyToBar(x) for x in response['groups']]
+
         return True
 
     @Slot(dict)
@@ -491,11 +638,6 @@ class MainWindow(QWidget):
             
         elif msg_type == "system":
             print(f"系统消息: {msg_dict.get('content')}")
-    
-    def slotsConnect(self):
-        '''绑定UI交互事件'''
-        # 将“发送”按钮的点击事件连接到 send_message 函数
-        self.messageSendButton.clicked.connect(self.send_message)
 
     @Slot()
     def send_message(self):
@@ -558,6 +700,17 @@ def contactToBar(contact: Contact) -> MainWindow.ContactBar:
         lastChat=contact.last_message
     )
 
+def friendToBar(friend: Friend) -> MainWindow.FriendBar:
+    return MainWindow.FriendBar(
+        UID=friend.uid,
+        ID=friend.nickname
+    )
+
+def partyToBar(party: Group) -> MainWindow.PartyBar:
+    return MainWindow.PartyBar(
+        UID=party.gid,
+        ID=party.name
+    )
 
 if __name__ == '__main__':
     MMApp = QApplication(sys.argv)
