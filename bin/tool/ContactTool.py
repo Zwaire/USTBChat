@@ -122,13 +122,7 @@ def request_friend_list() -> dict:
     # return _get_response({"type": "get_friend_list", "username": _uid})
 
 def request_group_list() -> dict:
-    """
-    请求群组列表。服务器应返回 
-    {
-        "type":"group_list",
-        "groups":[...]  # Group 列表
-    }
-    """
+    """请求群组列表。服务器应返回 {"type":"group_list","groups":[...]  # Group 列表}"""
     return dict(
         type="group_list",
         groups=[Group(gid="g123", name="Study Group")]
@@ -136,23 +130,11 @@ def request_group_list() -> dict:
     # return _get_response({"type": "get_group_list", "username": _uid})
 
 def request_add_friend(target_uid: str) -> dict:
-    """
-    发送加好友请求。服务器应返回 
-    {
-        "type":"add_friend",
-        "status":0 
-    }
-    """
+    """发送加好友请求。服务器应返回 {"type":"add_friend","status":0 }"""
     return _get_response({"type": "add_friend", "username": _uid, "target": target_uid})
 
 def request_join_group(gid: str) -> dict:
-    """
-    发送加群请求。服务器应返回 
-    {
-        "type":"join_group",
-        "status":0
-    }
-    """
+    """发送加群请求。服务器应返回 {"type":"join_group","status":0}"""
     return _get_response({"type": "join_group", "username": _uid, "gid": gid})
 
 def request_leave_group(gid: str) -> dict:
@@ -169,6 +151,10 @@ def request_group_members(gid: str) -> dict:
     }
     """
     return _get_response({"type": "get_group_members", "username": _uid, "gid": gid})
+
+def request_create_group(group_name: str) -> dict:
+    """发送建群请求。服务器应返回 {"type":"create_group","status":0,"gid":"..."}"""
+    return _get_response({"type": "create_group", "username": _uid, "group_name": group_name})
 
 # ── 消息操作 ──────────────────────────────────────────────────
 

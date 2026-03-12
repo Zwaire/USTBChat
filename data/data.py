@@ -17,7 +17,6 @@ def register(name, code, seed):
     sql = "SELECT * FROM users WHERE name=%s"
     cursor.execute(sql, (name,))
     results = cursor.fetchall()
-    print('=========',len(results))
     if len(results) != 0:
         cursor.close()
         db.close()
@@ -40,7 +39,7 @@ def seed(name):
     results = cursor.fetchall()
 
     if len(results) > 0:
-        user_seed = results[0][3]
+        user_seed = results[0][3] 
         cursor.close()
         db.close()
         return {"type": "seed", "status": 0, "seed": user_seed}
@@ -353,15 +352,9 @@ def find_group_ip(name):
         db.close()
         return None
     
-
-
+# [TODO] 下面的函数风格需要对应上，基本功能目前差不多
 def get_friends(name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor()
 
     sql = "select friend_id from friends where user_id=%s"
@@ -575,5 +568,3 @@ def remove_group_member(group_name, user_name):
 
 def leave_group(group_name, user_name):
     return remove_group_member(group_name, user_name)
-
-# =====================【新增结束：联系人/群组/历史记录接口】=====================
