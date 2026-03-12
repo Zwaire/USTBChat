@@ -1,6 +1,6 @@
 import mysql.connector
 
-def register(name,code):
+def register(name,code,seed):
     db=mysql.connector.connect(
     host="localhost",
     user="root",
@@ -12,12 +12,58 @@ def register(name,code):
     cursor.execute(sql,(name,))
     results=cursor.fetchall()
     if len(results)!=0:
-        return {"type":"register","statuts":0}
-    else :
-        sql="insert into users (name,code) values (%s,%s)"
-        cursor.execute(sql,(name,code))
-        db.commit()
         return {"type":"register","statuts":1}
+    else :
+        sql="insert into users (name,code,seed) values (%s,%s)"
+        cursor.execute(sql,(name,code,seed))
+        db.commit()
+        return {"type":"register","statuts":0}
+    
+def seed(name):
+    db=mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1",
+    database="chat"
+    )
+    cursor=db.cursor()
+    sql="select * from users where name = %s"
+    cursor.execute(sql,(name,))
+    results=cursor.fetchall()
+    if len(results)>0:
+        seed=results[0][3]
+        db.commit()
+        return {"type":"seed","status":0,"seed":seed}
+    else:
+        db.commit()
+        return {"type":"seed","status":9}
+    
+def request_pwd_find(name):
+    db=mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1",
+    database="chat"
+    )
+    cursor=db.cursor()
+    sql="select * from users where name=%s"
+    cursor.execute(sql,(name,))
+    results=cursor.fetchall()
+    if results>0:
+        return {"type":"request_pwd_find","status":0}
+    else:
+        return{"type":"request_pwd_find","status":8}
+    
+def change_code(name,code,seed):
+    db=mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="1",
+    database="chat"
+    )
+    cursor=db.cursor()
+    sql="update users set code=%s ,seed=%s where name=%s "
+    cursor.execute(sql,(code,seed,name))
     
 def log_in(name,code,ip):
     db=mysql.connector.connect(
