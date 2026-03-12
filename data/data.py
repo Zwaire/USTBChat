@@ -301,3 +301,228 @@ def find_group_ip(name):
             return ip
     else:
         return None
+    
+
+
+def get_friends(name):
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1",
+        database="chat"
+    )
+    cursor = db.cursor()
+
+    sql = "select friend_id from friends where user_id=%s"
+    user_id = find(name, "users")
+    cursor.execute(sql, (user_id,))
+    results = cursor.fetchall()
+
+    friends = []
+    for item in results:
+        friend_id = item[0]
+        sql = "select * from users where id=%s"
+        cursor.execute(sql, (friend_id,))
+        result_user = cursor.fetchone()
+        if result_user:
+            friends.append({
+                "uid": result_user[1],
+                "nickname": result_user[1]
+            })
+
+    db.commit()
+    return friends
+
+
+def get_group_list(name):
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1",
+        database="chat"
+    )
+    cursor = db.cursor()
+
+    user_id = find(name, "users")
+    sql = "select group_id from groups_member where user_id=%s"
+    cursor.execute(sql, (user_id,))
+    results = cursor.fetchall()
+
+    groups = []
+    for item in results:
+        group_id = item[0]
+        sql = "select * from groups_list where id=%s"
+        cursor.execute(sql, (group_id,))
+        result_group = cursor.fetchone()
+        if result_group:
+            groups.append({
+                "gid": result_group[1],
+                "name": result_group[1]
+            })
+
+    db.commit()
+    return groups
+
+
+def get_groups(name):
+    return get_group_list(name)
+
+
+def get_group_members(group_name):
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1",
+        database="chat"
+    )
+    cursor = db.cursor()
+
+    sql = "select * from groups_list where name=%s"
+    cursor.execute(sql, (group_name,))
+    result_group = cursor.fetchone()
+
+    members = []
+    if result_group:
+        group_id = result_group[0]
+        sql = "select user_id from groups_member where group_id=%s"
+        cursor.execute(sql, (group_id,))
+        results = cursor.fetchall()
+
+        for item in results:
+            user_id = item[0]
+            sql = "select * from users where id=%s"
+            cursor.execute(sql, (user_id,))
+            result_user = cursor.fetchone()
+            if result_user:
+                members.append({
+                    "uid": result_user[1],
+                    "nickname": result_user[1]
+                })
+
+    db.commit()
+    return members
+
+
+def get_history(user_name, friend_name):
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1",
+        database="chat"
+    )
+    cursor = db.cursor()
+
+    user_id = find(user_name, "users")
+    friend_id = find(friend_name, "users")
+
+    sql = """
+        select * from messages
+        where (send_id=%s and recive_id=%s) or (send_id=%s and recive_id=%s)
+        order by time asc
+    """
+    cursor.execute(sql, (user_id, friend_id, friend_id, user_id))
+    results = cursor.fetchall()
+
+    messages = []
+    for item in results:
+        send_id = item[1]
+        content = item[3]
+        msg_time = str(item[4])
+
+        sql = "select * from users where id=%s"
+        cursor.execute(sql, (send_id,))
+        result_user = cursor.fetchone()
+
+        if result_user:
+            sender_name = result_user[1]
+        else:
+            sender_name = ""
+
+        messages.append({
+            "sender_uid": sender_name,
+            "sender_nickname": sender_name,
+            "content": content,
+            "time": msg_time,
+            "is_self": True if sender_name == user_name else False
+        })
+
+    db.commit()
+    return messages
+
+
+def get_group_history(group_name):
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1",
+        database="chat"
+    )
+    cursor = db.cursor()
+
+    group_id = find(group_name, "groups_list")
+
+    sql = """
+        select * from group_messages
+        where group_id=%s
+        order by time asc
+    """
+    cursor.execute(sql, (group_id,))
+    results = cursor.fetchall()
+
+    messages = []
+    for item in results:
+        send_id = item[2]
+        content = item[3]
+        msg_time = str(item[4])
+
+        sql = "select * from users where id=%s"
+        cursor.execute(sql, (send_id,))
+        result_user = cursor.fetchone()
+
+        if result_user:
+            sender_name = result_user[1]
+        else:
+            sender_name = ""
+
+        messages.append({
+            "sender_uid": sender_name,
+            "sender_nickname": sender_name,
+            "content": content,
+            "time": msg_time,
+            "is_self": False
+        })
+
+    db.commit()
+    return messages
+
+
+def remove_group_member(group_name, user_name):
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1",
+        database="chat"
+    )
+    cursor = db.cursor()
+
+    sql = "select * from groups_list where name=%s"
+    cursor.execute(sql, (group_name,))
+    result_group = cursor.fetchone()
+
+    if result_group:
+        group_id = result_group[0]
+        user_id = find(user_name, "users")
+
+        sql = "delete from groups_member where group_id=%s and user_id=%s"
+        cursor.execute(sql, (group_id, user_id))
+        db.commit()
+        return {"type": "leave_group", "status": 0}
+    else:
+        db.commit()
+        return {"type": "leave_group", "status": 7}
+
+
+def leave_group(group_name, user_name):
+    return remove_group_member(group_name, user_name)
+
+# =====================【新增结束：联系人/群组/历史记录接口】=====================

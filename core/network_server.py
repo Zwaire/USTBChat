@@ -6,6 +6,8 @@ import threading
 from core.protocol import encode_msg, decode_msg
 from utils.logger import get_logger
 
+from datetime import datetime         #新增
+
 # 引入 ustbchat 的数据库操作模块
 from data import data as db
 
@@ -21,7 +23,90 @@ class ChatServer:
         # 记录在线用户 {username: {"conn": socket, "ip": ip_addr}}
         self.clients = {}
         self.lock = threading.Lock()
-    
+
+# =====================【新增开始：辅助方法】=====================
+    def normalize_friend_list(self, data):
+        result = []
+        for item in data:
+            if type(item) == dict:
+                uid = item.get("uid")
+                nickname = item.get("nickname")
+                if uid is not None:
+                    result.append({
+                        "uid": str(uid),
+                        "nickname": str(nickname) if nickname is not None else str(uid)
+                    })
+            elif type(item) == tuple or type(item) == list:
+                if len(item) >= 2:
+                    result.append({
+                        "uid": str(item[0]),
+                        "nickname": str(item[1])
+                    })
+                elif len(item) == 1:
+                    result.append({
+                        "uid": str(item[0]),
+                        "nickname": str(item[0])
+                    })
+            else:
+                result.append({
+                    "uid": str(item),
+                    "nickname": str(item)
+                })
+        return result
+
+    def normalize_group_list(self, data):
+        result = []
+        for item in data:
+            if type(item) == dict:
+                gid = item.get("gid")
+                name = item.get("name")
+                if gid is not None:
+                    result.append({
+                        "gid": str(gid),
+                        "name": str(name) if name is not None else str(gid)
+                    })
+            elif type(item) == tuple or type(item) == list:
+                if len(item) >= 2:
+                    result.append({
+                        "gid": str(item[0]),
+                        "name": str(item[1])
+                    })
+                elif len(item) == 1:
+                    result.append({
+                        "gid": str(item[0]),
+                        "name": str(item[0])
+                    })
+            else:
+                result.append({
+                    "gid": str(item),
+                    "name": str(item)
+                })
+        return result
+
+    def build_contacts(self, friends, groups):
+        contacts = []
+        for item in friends:
+            contacts.append({
+                "id": item.get("uid"),
+                "name": item.get("nickname"),
+                "is_group": False,
+                "last_message": "",
+                "last_time": "",
+                "unread": 0
+            })
+        for item in groups:
+            contacts.append({
+                "id": item.get("gid"),
+                "name": item.get("name"),
+                "is_group": True,
+                "last_message": "",
+                "last_time": "",
+                "unread": 0
+            })
+        return contacts
+
+# =====================【新增结束：辅助方法】=====================
+
     # 初始化监听Socket，用于TCP连接
     def start(self):
         logger.info(f"Server started, listening on {self.host}:{self.port}, waiting for connections...")
@@ -43,21 +128,36 @@ class ChatServer:
                     break
 
                 msg_type = msg.get("type")
-                print(f"This is {msg_type} type message")
+
+
+                # =====================【新增开始：兼容段】=====================
+                if msg_type == "add_friend" and msg.get("friendname") is None and msg.get("target") is not None:
+                    msg["friendname"] = msg.get("target")
+
+                if msg_type == "group_message" and msg.get("groupname") is None and msg.get("friendname") is not None:
+                    msg["groupname"] = msg.get("friendname")
+
+                if msg_type == "group_message" and msg.get("groupmessage") is None and msg.get("message") is not None:
+                    msg["groupmessage"] = msg.get("message")
+
+                if msg_type == "group_message" and msg.get("time") is None:
+                    msg["time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                if (msg_type == "create_group" or msg_type == "join_group" or msg_type == "leave_group" or msg_type == "get_group_members") and msg.get(
+                        "groupname") is None and msg.get("gid") is not None:
+                    msg["groupname"] = msg.get("gid")
+
+                if (msg_type == "fetch_history" or msg_type == "get_history" or msg_type == "history") and msg.get(
+                        "target") is None and msg.get("target_id") is not None:
+                    msg["target"] = msg.get("target_id")
+                # =====================【新增结束：兼容段】=====================
+
+
                 # 1. 注册请求
                 if msg_type == "register":
                     username = msg.get("username")
-                    code = msg["code"]
-                    parts = code.split('$', 1)  # split(分隔符, 最大拆分次数)
-                    if len(parts) == 2:
-                        salt_hex = parts[0]  # 第一部分：盐值的十六进制字符串
-                        dk_hex = parts[1]    # 第二部分：派生密钥的十六进制字符串
-                    else:
-                        salt_hex = ""
-                        dk_hex = ""
-                        print("错误：拼接字符串格式不正确，缺少分隔符 $")
-
-                    res = db.register(username, dk_hex, salt_hex)
+                    code = msg.get("code")
+                    res = db.register(username, code)
                     # status: 1为成功，0为已存在
                     conn.sendall(encode_msg({
                         "type": "register",
@@ -130,7 +230,150 @@ class ChatServer:
                     db.save_group_message(sender, groupname, content)
                     # 群聊广播逻辑 (遍历群成员发送)
                     self.broadcast(msg)
-                    
+
+                # =====================【新增开始：联系人/群组/历史记录相关请求】=====================
+
+                # 6. 获取好友列表
+                elif msg_type == "get_friend_list":
+                    username = msg.get("username")
+                    if username is None:
+                        username = current_user
+                    res = db.get_friends(username)
+                    res = self.normalize_friend_list(res)
+                    conn.sendall(encode_msg({
+                        "type": "friend_list",
+                        "friends": res
+                    }))
+
+                # 7. 获取群列表
+                elif msg_type == "get_group_list":
+                    username = msg.get("username")
+                    if username is None:
+                        username = current_user
+                    res = db.get_group_list(username)
+                    res = self.normalize_group_list(res)
+                    conn.sendall(encode_msg({
+                        "type": "group_list",
+                        "groups": res
+                    }))
+
+                # 8. 获取联系人列表
+                elif msg_type == "get_contacts_list":
+                    username = msg.get("username")
+                    if username is None:
+                        username = current_user
+                    friends = db.get_friends(username)
+                    groups = db.get_group_list(username)
+                    friends = self.normalize_friend_list(friends)
+                    groups = self.normalize_group_list(groups)
+                    contacts = self.build_contacts(friends, groups)
+                    conn.sendall(encode_msg({
+                        "type": "contacts_list",
+                        "contacts": contacts
+                    }))
+
+                # 9. 建群
+                elif msg_type == "create_group":
+                    username = msg.get("username")
+                    if username is None:
+                        username = current_user
+                    groupname = msg.get("groupname")
+                    res = db.create_group(groupname, username)
+
+                    status = False
+                    if type(res) == dict:
+                        if res.get("status") == 0 or res.get("status") == 1 or res.get("statuts") == 0 or res.get(
+                                "statuts") == 1:
+                            status = True
+
+                    conn.sendall(encode_msg({
+                        "type": "create_group",
+                        "status": status,
+                        "gid": groupname if groupname is not None else "",
+                        "warnings": "" if status else "Create group failed"
+                    }))
+
+                # 10. 加入群
+                elif msg_type == "join_group":
+                    username = msg.get("username")
+                    if username is None:
+                        username = current_user
+                    groupname = msg.get("groupname")
+                    res = db.add_group_member(groupname, username)
+
+                    status = False
+                    if type(res) == dict:
+                        if res.get("status") == 0 or res.get("status") == 1 or res.get("statuts") == 0 or res.get(
+                                "statuts") == 1:
+                            status = True
+
+                    conn.sendall(encode_msg({
+                        "type": "join_group",
+                        "status": status,
+                        "gid": groupname if groupname is not None else "",
+                        "warnings": "" if status else "Join group failed"
+                    }))
+
+                # 11. 退群
+                elif msg_type == "leave_group":
+                    username = msg.get("username")
+                    if username is None:
+                        username = current_user
+                    groupname = msg.get("groupname")
+                    res = db.remove_group_member(groupname, username)
+
+                    status = True if res.get("status") == 0 else False
+
+                    conn.sendall(encode_msg({
+                        "type": "leave_group",
+                        "status": status,
+                        "gid": groupname if groupname is not None else "",
+                        "warnings": "" if status else "Leave group failed"
+                    }))
+
+                # 12. 获取群成员
+                elif msg_type == "get_group_members":
+                    groupname = msg.get("groupname")
+                    res = db.get_group_members(groupname)
+                    res = self.normalize_friend_list(res)
+                    conn.sendall(encode_msg({
+                        "type": "group_members",
+                        "gid": groupname if groupname is not None else "",
+                        "members": res
+                    }))
+
+                # 13. 获取历史记录
+                elif msg_type == "fetch_history" or msg_type == "get_history" or msg_type == "history":
+                    username = msg.get("username")
+                    if username is None:
+                        username = current_user
+
+                    target = msg.get("target")
+                    if target is None:
+                        target = msg.get("target_id")
+
+                    messages = []
+                    is_group = False
+
+                    group_list = db.get_group_list(username)
+                    for g in group_list:
+                        if type(g) == dict and str(g.get("gid")) == str(target):
+                            is_group = True
+                            break
+
+                    if is_group:
+                        messages = db.get_group_history(target)
+                    else:
+                        messages = db.get_history(username, target)
+
+                    conn.sendall(encode_msg({
+                        "type": "history",
+                        "target_id": target if target is not None else "",
+                        "messages": messages
+                    }))
+
+        # =====================【新增结束：联系人/群组/历史记录相关请求】=====================
+
         except ConnectionResetError:
             pass
         finally:
