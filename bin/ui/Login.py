@@ -350,8 +350,32 @@ class LoginWindow(QWidget):
             self.warning(str(result))
 
         # 向服务器发送登录信息
+        try:
+            serverReply = tool._send_register_info(info)
+        except:
+            self.warning("网络错误")
+            return
 
         # 服务器信息处理
+        if 'error' in serverReply.keys():
+            self.warning("网络错误")
+            return
+        
+        if serverReply['type'] != 'register':
+            self.warning("服务器返回了错误的消息")
+            return
+        
+        serverStatue = serverReply['status']
+        if serverStatue == 1:
+            self.warning("该用户名已存在")
+            return
+        elif serverStatue == 0:
+            self.warning("注册成功")
+            self.switchToLogin()
+            return
+        else:
+            self.warning("服务器返回了错误的状态码")
+            return
 
         # 构造注册报文并发送
         register_packet = {
