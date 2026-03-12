@@ -109,6 +109,36 @@ class LoginWindowTool:
         return response 
 
     @classmethod
+    def _send_register_info(cls, info: LoginInfo) -> dict:
+        ''' 
+        向服务器发送注册信息，错误会返回名为"error"的键，成功则返回服务器响应的字典，返回的格式如下所示
+        dict={
+            "type":"register"
+            "status": 0
+        }
+        '''
+        _pwd = info.Password
+
+        # 对密码进行客户端派生加密（返回格式为 "salt$derived_key"）
+        encrypted = cls._pwd_encryption(_pwd)
+        if not encrypted:
+            return {"error": "empty password"}
+
+        # 构建发送到服务器的请求体
+        request = {
+            "type": "register",
+            "code": encrypted, # 为了方便通信接口，直接将salt和hash一起发送，服务器端收到后再进行拆分验证
+            "username": getattr(info, 'ID', ''),
+            "ip": LoginInfo._get_localip()
+        }
+
+        response = contact_tool._get_response(request)
+        if not response:
+            return {"error": "no response from server"}
+        else:
+            return response
+
+    @classmethod
     def _send_login_info(cls, info: LoginInfo) -> dict:
         ''' 
         向服务器发送登录信息，错误会返回名为"error"的键，成功则返回服务器响应的字典

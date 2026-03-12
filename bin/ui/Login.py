@@ -319,7 +319,7 @@ class LoginWindow(QWidget):
     @Slot()
     def registerAccount(self):
         '''
-        点击登录按钮后的操作
+        点击注册按钮后的操作
         包括密码验证、信息打包、输入验证、错误警告、信息发送和服务器消息处理
         '''
 
@@ -380,8 +380,8 @@ class LoginWindow(QWidget):
         
         # 假设 MainWindow 已支持传入 client
         from bin.ui.UserInterface import MainWindow
-        self.main_window = MainWindow(client=self.client) 
-        self.main_window.show()
+        # self.main_window = MainWindow(client=self.client) 
+        # self.main_window.show()
         self.close()
 
     def warning(self, text: str):
