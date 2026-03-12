@@ -55,7 +55,19 @@ class ChatServer:
                         "status": True if res.get("statuts") == 1 else False,
                         "warnings": "The user exists" if res.get("statuts") == 0 else ""
                     }))
-
+                elif msg_type=="seed":
+                    username=msg.get("username")
+                    res=db.seed(username)
+                    conn.sendall(encode_msg(res))
+                elif msg_type=="request_pwd_find":
+                    username=msg.get("username")
+                    res=db.request_pwd_find(username)
+                    conn.sendall(encode_msg)
+                    if res.get("status")==0:
+                        db.change_code(msg.get("code"),msg.get("seed"))
+                        conn.sendall(encode_msg(res))
+                    else:
+                        conn.sendall(encode_msg(res))
                 # 2. 登录请求
                 elif msg_type == "login":
                     username = msg.get("username")
