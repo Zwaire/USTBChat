@@ -92,14 +92,20 @@ class LoginWindowTool:
         return salt.hex() + '$' + dk.hex()
 
     def _request_pwd_find(self, id: str) -> dict:
-        ''' 向服务器发送请求，发送id进行查验 '''
+        ''' 
+        向服务器发送请求，发送id进行查验 ，发送一个字典，返回得到的形式如下所示：
+        dict={
+            "type":"register"
+            "status": 0
+        }
+        '''
         request = {
             "type": "request_pwd_find",
             "username": id,
             "ip": LoginInfo._get_localip()
         }
         response = contact_tool._get_response(request)
-        return response  
+        return response 
 
     def _send_login_info(self, info: LoginInfo) -> dict | bool:
         ''' 
