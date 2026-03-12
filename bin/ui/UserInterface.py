@@ -17,9 +17,10 @@ from PySide6.QtCore import Qt, Slot, QObject, Signal
 from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
 
 # 新增引入状态管理和消息模型
-from bin.state.AppState import AppState
-from bin.state.ChatModels import Message
+# from bin.state.AppState import AppState
+from bin.state.ChatModels import Message, Contact
 from bin.tool.LoginTool import LoginWindowTool as tool
+from bin.tool.UserInterfaceTool import UserInterfaceTool as UITool
 
 # 新增一个信号类，用于安全地将子线程收到的网络消息抛给主线程 UI
 class MainSignals(QObject):
@@ -184,7 +185,6 @@ class MainWindow(QWidget):
             '''修改最后一条消息'''
 
             self.objLastChatBar.setText(lastChat)
-
     class ChatBar(QWidget):
         '''
         显示在聊天区域的聊天块
@@ -249,7 +249,6 @@ class MainWindow(QWidget):
         
         def modifyChatContent(self, content: str):
             self.chatContent.setPlainText(content)
-
 
     def __init__(self):
         super().__init__()
@@ -435,7 +434,35 @@ class MainWindow(QWidget):
         self.rightSideBarLayout.addWidget(Separator(width=1))
         self.rightSideBarLayout.addWidget(self.partyMemberSection, 0)
         self.rightSideBarSection.setLayout(self.rightSideBarLayout)
+    
+    def initContactList(self) -> bool:
+        '''登录后, 从服务器获取消息对象列表, 并显示在左侧边栏'''
+
+        import bin.tool.ContactTool as CT
+
+        response = dict()
+        # 向服务器获取
+        while ():
+            try:
+                response = CT.request_contacts_list()
+            except:
+                continue
+            
+            break
         
+        # 解析服务器消息
+        if not response['type'] != 'contacts_list':
+            return False
+        
+        # 将Contact转换为能直接用的ContactBar
+        contactBarList = [contactToBar(x) for x in response['contacts']]
+
+        for i in range(len(contactBarList)):
+            self.newsListLayout.insertWidget(-1, contactBarList[i])
+        
+        self.newsListLayout.update()
+        return True
+
     @Slot(dict)
     def process_network_message(self, msg_dict):
         '''
@@ -458,7 +485,7 @@ class MainWindow(QWidget):
             )
             
             # 利用 AppState 进行本地持久化并更新内存缓存
-            AppState().add_message(target_id=sender_id, msg=new_msg)
+            # AppState().add_message(target_id=sender_id, msg=new_msg)
             
             # 可以在这里追加 UI 刷新的代码，比如把消息打印到中间的聊天框里
             print(f"收到来自 {sender_id} 的消息: {content}")
@@ -479,22 +506,22 @@ class MainWindow(QWidget):
         if not text:
             return # 没写字就不发
             
-        from bin.state.AppState import AppState
+        # from bin.state.AppState import AppState
         from bin.state.ChatModels import Message
 
-        my_uid = AppState().uid
+        # my_uid = AppState().uid
         
         # 注意：由于目前左侧列表没做好，我们暂时无法通过点击来“选中”好友。
         # 为了让代码跑通，我们先强行指定一个目标好友 (建议去 MySQL 注册一个名为 test 的账号用来测试)
         target_friend = "test" 
 
         # 构造符合《通信接口.md》规范的报文
-        packet = {
-            "type": "message",
-            "username": my_uid,
-            "friendname": target_friend,
-            "message": text
-        }
+        # packet = {
+        #     "type": "message",
+        #     "username": my_uid,
+        #     "friendname": target_friend,
+        #     "message": text
+        # }
         
         # if self.client:
         #     # 1. 把消息发给服务器
@@ -515,6 +542,17 @@ class MainWindow(QWidget):
         #     print(f"成功发送给 {target_friend}: {text}")
         # else:
         #     QMessageBox.warning(self, "错误", "未连接到服务器！")
+
+def contactToBar(contact: Contact) -> MainWindow.ContactBar:
+    return MainWindow.ContactBar(
+        type=contact.is_group,
+        UID=contact.id,
+        ID=contact.name,
+        isRead=(contact.unread == 0),
+        lastTime=UITool.format_msg_time(contact.last_time),
+        lastChat=contact.last_message
+    )
+
 
 if __name__ == '__main__':
     MMApp = QApplication(sys.argv)
