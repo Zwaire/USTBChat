@@ -9,7 +9,7 @@ class Message:
     sender_uid: str       # 发送者的用户ID，字符串类型
     sender_nickname: str  # 发送者的昵称，字符串类型
     content: str         # 消息内容，字符串类型
-    time: str            # 消息发送时间，字符串类型，格式由服务器决定
+    time: str            # 消息发送时间，时间格式为"2025-03-12 14:30:00"这样的类似的字符串
     is_self: bool        # 是否是自己发的消息，布尔类型
     '''
     sender_uid: str

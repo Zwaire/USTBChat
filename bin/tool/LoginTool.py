@@ -93,14 +93,8 @@ class LoginWindowTool:
         Returns:
             dict: 服务器返回的响应数据，包含是否成功、错误信息等
         '''
-        _request = protocol.encode_msg(request)
-        
-        # [WFT]
-        # <————————————————————————————————————>
-        # 需要将request 发送到服务器，并且得到服务器的响应
-        # <————————————————————————————————————>
-        response = {}  # 这里应该是从服务器接收到的响应数据
-        return response
+
+        return
 
     def _request_pwd_find(self, id: str) -> dict:
         ''' 向服务器发送请求，发送id进行查验 '''
