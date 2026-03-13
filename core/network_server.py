@@ -320,6 +320,156 @@ class ChatServer:
             if current_user:
                 self.remove_client(current_user)
 
+    #
+    def is_ai_trigger(self, text: str) -> bool:
+        if not text:
+            return False
+        return str(text).strip().startswith("@智能助手")
+
+    def extract_file_info(self, msg: dict):
+        filename = (
+            msg.get("filename")
+            or msg.get("file_name")
+            or ""
+        )
+        content = (
+            msg.get("content")
+            or msg.get("file_content")
+            or msg.get("text_content")
+            or ""
+        )
+
+        file_obj = msg.get("file")
+        if isinstance(file_obj, dict):
+            if not filename:
+                filename = file_obj.get("filename") or file_obj.get("file_name") or ""
+            if not content:
+                content = file_obj.get("content") or file_obj.get("file_content") or ""
+
+        return str(filename).strip(), str(content).strip()
+
+    def build_ai_private_msg(self, to_user: str, content: str):
+        return {
+            "type": "message",
+            "username": self.ai_name,
+            "friendname": to_user,
+            "message": content,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+    def build_ai_group_msg(self, groupname: str, content: str):
+        return {
+            "type": "group_message",
+            "username": self.ai_name,
+            "groupname": groupname,
+            "groupmessage": content,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+    def send_private_from_ai(self, to_user: str, content: str):
+        msg = self.build_ai_private_msg(to_user, content)
+        self.send_private(to_user, msg)
+
+    def send_group_from_ai(self, groupname: str, content: str):
+        msg = self.build_ai_group_msg(groupname, content)
+        # 如果你们有“只给群成员广播”的函数，请替换这一句
+        self.broadcast(msg)
+
+    def handle_ai_private(self, username: str, friendname: str, message: str, raw_msg: dict):
+        if not self.is_ai_trigger(message):
+            return
+
+        filename, file_content = self.extract_file_info(raw_msg)
+
+        # 有文件：走总结
+        if file_content:
+            result = self.ai_client.summarize_private(
+                username=username,
+                friendname=friendname,
+                message=message,
+                filename=filename or "未知文件",
+                content=file_content
+            )
+            reply_text = result.get("summary") if result.get("status") == 0 else f"总结失败：{result.get('error', '未知错误')}"
+        else:
+            recent_messages = db.get_recent_private_messages(username, friendname, limit=5)
+
+            # 当前消息在 recent 里未出现时，补进去
+            if not recent_messages or recent_messages[-1].get("message") != message:
+                recent_messages.append({
+                    "username": username,
+                    "message": message
+                })
+
+            result = self.ai_client.reply_private(
+                username=username,
+                friendname=friendname,
+                message=message,
+                recent_messages=recent_messages
+            )
+            reply_text = result.get("reply") if result.get("status") == 0 else f"调用失败：{result.get('error', '未知错误')}"
+
+        self.send_private_from_ai(username, reply_text or "我暂时无法回答。")
+
+    def handle_ai_group(self, username: str, groupname: str, groupmessage: str, raw_msg: dict):
+        if not self.is_ai_trigger(groupmessage):
+            return
+
+        filename, file_content = self.extract_file_info(raw_msg)
+
+        # 有文件：走总结
+        if file_content:
+            result = self.ai_client.summarize_group(
+                username=username,
+                groupname=groupname,
+                groupmessage=groupmessage,
+                filename=filename or "未知文件",
+                content=file_content
+            )
+            reply_text = result.get("summary") if result.get("status") == 0 else f"总结失败：{result.get('error', '未知错误')}"
+        else:
+            recent_messages = db.get_recent_group_messages(groupname, limit=5)
+
+            if not recent_messages or recent_messages[-1].get("message") != groupmessage:
+                recent_messages.append({
+                    "username": username,
+                    "message": groupmessage
+                })
+
+            result = self.ai_client.reply_group(
+                username=username,
+                groupname=groupname,
+                groupmessage=groupmessage,
+                recent_messages=recent_messages
+            )
+            reply_text = result.get("reply") if result.get("status") == 0 else f"调用失败：{result.get('error', '未知错误')}"
+
+        self.send_group_from_ai(groupname, reply_text or "我暂时无法回答。")
+
+    def handle_group_atmosphere(self, groupname: str):
+        recent_messages = db.get_recent_group_messages(groupname, limit=5)
+        result = self.ai_client.analyze_atmosphere(
+            groupname=groupname,
+            recent_messages=recent_messages
+        )
+
+        if result.get("status") == 0:
+            return {
+                "type": "group_atmosphere",
+                "status": 0,
+                "groupname": groupname,
+                "emotion": result.get("emotion"),
+                "label": result.get("label"),
+                "color": result.get("color")
+            }
+
+        return {
+            "type": "group_atmosphere",
+            "status": 1,
+            "groupname": groupname,
+            "error": result.get("error", "群聊氛围分析失败")
+        }
+
     def broadcast(self, msg_dict):
         """公共消息广播：发送给所有用户"""
         data = encode_msg(msg_dict)
