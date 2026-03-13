@@ -96,7 +96,7 @@ class AddFriendPartyWindow(QWidget):
 
         # 检查输入是否合法
         whatUserWrite = self.uidInputer.getInput()
-        if not tool._is_uid(whatUserWrite):
+        if not tool._validate_id(whatUserWrite):
             QMessageBox.warning(self, "", "输入UID的格式有误")
             return
 
@@ -742,6 +742,8 @@ class MainWindow(QWidget):
         self.mainLayout.addWidget(self.rightSideBarSection, 0)
         self.setLayout(self.mainLayout)
 
+        self.rightSideBarSection.setHidden(True)
+
         self.initContactList()
         self.getFriendsListFromServer()
         self.getGroupsListFromServer()
@@ -764,16 +766,16 @@ class MainWindow(QWidget):
         self.personalUID.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
 
         # 消息列表切换按钮栏
-        self.switchButtonSection = Section((200, 20))
-        self.newsButton = Button("N", "最新消息", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
-        self.friendsButton = Button("F", "好友", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
-        self.partiesButton = Button("P", "群聊", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
+        self.switchButtonSection = Section((200, 40))
+        self.newsButton = Button("N", "最新消息", (40, 40), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+        self.friendsButton = Button("F", "好友", (40, 40), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+        self.partiesButton = Button("P", "群聊", (40, 40), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
 
         # 消息列表区域
-        self.messageListSection = Section((200, 538), Section.VExtendable)
-        self.newsListSection = Section((200, 538), Section.VExtendable)
-        self.friendsListSection = Section((200, 538), Section.VExtendable)
-        self.partiesListSection = Section((200, 538), Section.VExtendable)
+        self.messageListSection = Section((200, 518), Section.VExtendable)
+        self.newsListSection = Section((200, 518), Section.VExtendable)
+        self.friendsListSection = Section((200, 518), Section.VExtendable)
+        self.partiesListSection = Section((200, 518), Section.VExtendable)
         # 从本地读取已经存在的消息列表
         # <————————————————————————————————>
         # [NTC]
@@ -1011,7 +1013,17 @@ class MainWindow(QWidget):
         # 将Contact转换为能直接用的ContactBar
         self.newsContactBarList = []
         for x in response['contacts']:
-            _ = contactToBar(x)
+
+            aContact = Contact(
+                x['id'],
+                x['name'],
+                x['is_group'],
+                x['last_message'],
+                x['last_time'],
+                x['unread'] == 0
+            )
+
+            _ = contactToBar(aContact)
             _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = _.Type: self.showSpecificChatArea(uid, isGroup))
             self.newsContactBarList.append(_)
         # self.newsContactBarList[0].printInfo()
@@ -1044,7 +1056,13 @@ class MainWindow(QWidget):
         # 转换为Bar
         # self.friendsBarList = [friendToBar(x) for x in response['friends']]
         for x in response['friends']:
-            _ = friendToBar(x)
+
+            aFriend = Friend(
+                x['uid'],
+                x['nickname']
+            )
+
+            _ = friendToBar(aFriend)
             _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = False: self.showSpecificChatArea(uid, isGroup))
             self.friendsBarList.append(_)
 
@@ -1075,7 +1093,14 @@ class MainWindow(QWidget):
         self.partiesBarList.clear()
 
         for x in response['groups']:
-            _ = partyToBar(x)
+
+            aGroup = Group(
+                x['gid'],
+                x['name'],
+                None
+            )
+
+            _ = partyToBar(aGroup)
             _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = True: self.showSpecificChatArea(uid, isGroup))
             self.partiesBarList.append(_)
 
@@ -1149,7 +1174,8 @@ class MainWindow(QWidget):
 
         # import bin.tool.ContactTool as CTool
 
-        # print("I am clicked")
+        print("I am clicked")
+        print("CurrentChatID: ", self.CurrentChatID)
         self.CurrentChatID = UID
         self.isCurrentChatGroup = isGroup
 
@@ -1223,22 +1249,7 @@ class MainWindow(QWidget):
         if not text:
             return # 没写字就不发
             
-        # from bin.state.AppState import AppState
         from bin.state.ChatModels import Message
-
-        # my_uid = AppState().uid
-        
-        # 注意：由于目前左侧列表没做好，我们暂时无法通过点击来“选中”好友。
-        # 为了让代码跑通，我们先强行指定一个目标好友 (建议去 MySQL 注册一个名为 test 的账号用来测试)
-        # target_friend = "test" 
-
-        # 构造符合《通信接口.md》规范的报文
-        # packet = {
-        #     "type": "message",
-        #     "username": self.UserID,
-        #     "friendname": self.CurrentChatID,
-        #     "message": text
-        # }
         
         sendContent = self.messageInputer.toPlainText().strip()
 
@@ -1278,26 +1289,6 @@ class MainWindow(QWidget):
         scrollBar = self.scrollableMessageLayout.verticalScrollBar()
         scrollBar.setValue(scrollBar.maximum())
         self.messageDisplayLayout.update()
-
-        # if self.client:
-        #     # 1. 把消息发给服务器
-        #     self.client.send_data(packet)
-            
-        #     # 2. 把消息存入本地 AppState
-        #     new_msg = Message(
-        #         sender_uid=my_uid,
-        #         sender_nickname=AppState().nickname,
-        #         content=text,
-        #         time="刚刚",
-        #         is_self=True
-        #     )
-        #     AppState().add_message(target_friend, new_msg)
-            
-        #     # 3. 清空输入框，并在控制台打印确认
-        #     self.messageInputer.clear()
-        #     print(f"成功发送给 {target_friend}: {text}")
-        # else:
-        #     QMessageBox.warning(self, "错误", "未连接到服务器！")
 
     @Slot()
     def rcMenuOfPersonalInfoBar(self, pos, target):
@@ -1380,7 +1371,7 @@ def wipeOutChildItemOfLayout(layout: QLayout, delete_layout_itself: bool = False
     # 递归基线：当布局中不再有项时停止
     while layout.count():
         # 获取并移除最顶层的项
-        item: QLayoutItem = layout.takeAt(0)
+        item: QLayoutItem = layout.takeAt(0) #type: ignore
         if item is None:
             continue
 
@@ -1442,7 +1433,7 @@ def partyToBar(party: Group) -> MainWindow.PartyBar:
 
 if __name__ == '__main__':
     MMApp = QApplication(sys.argv)
-    Window = MainWindow()
+    Window = MainWindow("A", "123456")
     Window.show()
     MMApp.exec()
 

@@ -45,6 +45,7 @@ class USTBChatClient:
         if self.login_window:
             self.login_window.close()
         # print("UID: ", uid)
+        ContactTool._nickname, ContactTool._uid = name, uid
         _main_window = MainWindow(uid, name)
         _main_window.show()
 
@@ -80,7 +81,7 @@ class USTBChatClient:
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # app.setStyleSheet(Theme.Dark)
+    app.setStyleSheet(Theme.Normal)
     client = USTBChatClient(app)
     # 启动客户端
     client.start()

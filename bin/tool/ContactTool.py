@@ -110,7 +110,7 @@ def request_contacts_list() -> dict:
     #     contacts=[Contact(id="1231", name="JohnDoe", is_group=False) ] +
     #             [Contact(id="g123", name="StudyGroup", is_group=True)]
     # )
-    return _get_response({"type": "get_contacts_list", "username": _uid})
+    return _get_response({"type": "get_contacts_list", "username": _nickname})
 
 def request_friend_list() -> dict:
     """请求好友列表。服务器应返回 {"type":"friend_list","friends":[...] # Friend 列表}"""
@@ -119,7 +119,7 @@ def request_friend_list() -> dict:
     #     friends=[Friend(uid="10001", nickname="Alice")] +
     #             [Friend(uid="10002", nickname="Bob")]
     # )
-    return _get_response({"type": "get_friend_list", "username": _uid})
+    return _get_response({"type": "get_friend_list", "username": _nickname})
 
 def request_group_list() -> dict:
     """请求群组列表。服务器应返回 {"type":"group_list","groups":[...]  # Group 列表}"""
@@ -127,19 +127,20 @@ def request_group_list() -> dict:
     #     type="group_list",
     #     groups=[Group(gid="g123", name="Study Group")]
     # )
-    return _get_response({"type": "get_group_list", "username": _uid})
+    return _get_response({"type": "get_group_list", "username": _nickname})
 
-def request_add_friend(target_uid: str) -> dict:
+def request_add_friend(target_name: str) -> dict:
     """发送加好友请求。服务器应返回 {"type":"add_friend","status":0 }"""
-    return _get_response({"type": "add_friend", "username": _uid, "target": target_uid})
+    print(_nickname, target_name)
+    return _get_response({"type": "add_friend", "username": _nickname, "friendname": target_name})
 
 def request_join_group(gid: str) -> dict:
     """发送加群请求。服务器应返回 {"type":"join_group","status":0}"""
-    return _get_response({"type": "join_group", "username": _uid, "gid": gid})
+    return _get_response({"type": "join_group", "username": _nickname, "gid": gid})
 
 def request_leave_group(gid: str) -> dict:
     """发送退群请求。服务器应返回 {"type":"leave_group","status":0}"""
-    return _get_response({"type": "leave_group", "username": _uid, "gid": gid})
+    return _get_response({"type": "leave_group", "username": _nickname, "gid": gid})
 
 def request_group_members(gid: str) -> dict:
     """
@@ -150,7 +151,7 @@ def request_group_members(gid: str) -> dict:
         "members":[...]
     }
     """
-    return _get_response({"type": "get_group_members", "username": _uid, "gid": gid})
+    return _get_response({"type": "get_group_members", "username": _nickname, "gid": gid})
 
 def request_create_group(group_name: str, uids: list[str]) -> dict:
     """
@@ -163,7 +164,7 @@ def request_create_group(group_name: str, uids: list[str]) -> dict:
         return {"type": "create_group", "status": -1, "msg": "群名不能为空"}
     if not uids or not all(isinstance(uid, str) and uid.strip() for uid in uids):
         return {"type": "create_group", "status": -1, "msg": "uid列表不能为空，且所有uid必须为非空字符串"}
-    return _get_response({"type": "create_group", "username": _uid, "group_name": group_name, "uids": uids})
+    return _get_response({"type": "create_group", "username": _nickname, "group_name": group_name, "uids": uids})
 
 # ── 消息操作 ──────────────────────────────────────────────────
 
