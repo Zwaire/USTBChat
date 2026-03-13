@@ -145,7 +145,7 @@ class ChatServer:
                 elif msg_type=="request_pwd_find":
                     username=msg.get("username")
                     res=db.request_pwd_find(username)
-                    conn.sendall(encode_msg)
+                    conn.sendall(encode_msg(res))
                     if res.get("status")==0:
                         db.change_code(msg.get("username"), msg.get("code"),msg.get("seed"))
                         conn.sendall(encode_msg(res))
