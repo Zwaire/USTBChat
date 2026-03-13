@@ -129,9 +129,10 @@ def request_group_list() -> dict:
     # )
     return _get_response({"type": "get_group_list", "username": _nickname})
 
-def request_add_friend(target_uid: str) -> dict:
+def request_add_friend(target_name: str) -> dict:
     """发送加好友请求。服务器应返回 {"type":"add_friend","status":0 }"""
-    return _get_response({"type": "add_friend", "username": _nickname, "target": target_uid})
+    print(_nickname, target_name)
+    return _get_response({"type": "add_friend", "username": _nickname, "friendname": target_name})
 
 def request_join_group(gid: str) -> dict:
     """发送加群请求。服务器应返回 {"type":"join_group","status":0}"""
