@@ -742,6 +742,8 @@ class MainWindow(QWidget):
         self.mainLayout.addWidget(self.rightSideBarSection, 0)
         self.setLayout(self.mainLayout)
 
+        self.rightSideBarSection.setHidden(True)
+
         self.initContactList()
         self.getFriendsListFromServer()
         self.getGroupsListFromServer()
@@ -1223,22 +1225,7 @@ class MainWindow(QWidget):
         if not text:
             return # 没写字就不发
             
-        # from bin.state.AppState import AppState
         from bin.state.ChatModels import Message
-
-        # my_uid = AppState().uid
-        
-        # 注意：由于目前左侧列表没做好，我们暂时无法通过点击来“选中”好友。
-        # 为了让代码跑通，我们先强行指定一个目标好友 (建议去 MySQL 注册一个名为 test 的账号用来测试)
-        # target_friend = "test" 
-
-        # 构造符合《通信接口.md》规范的报文
-        # packet = {
-        #     "type": "message",
-        #     "username": self.UserID,
-        #     "friendname": self.CurrentChatID,
-        #     "message": text
-        # }
         
         sendContent = self.messageInputer.toPlainText().strip()
 
@@ -1278,26 +1265,6 @@ class MainWindow(QWidget):
         scrollBar = self.scrollableMessageLayout.verticalScrollBar()
         scrollBar.setValue(scrollBar.maximum())
         self.messageDisplayLayout.update()
-
-        # if self.client:
-        #     # 1. 把消息发给服务器
-        #     self.client.send_data(packet)
-            
-        #     # 2. 把消息存入本地 AppState
-        #     new_msg = Message(
-        #         sender_uid=my_uid,
-        #         sender_nickname=AppState().nickname,
-        #         content=text,
-        #         time="刚刚",
-        #         is_self=True
-        #     )
-        #     AppState().add_message(target_friend, new_msg)
-            
-        #     # 3. 清空输入框，并在控制台打印确认
-        #     self.messageInputer.clear()
-        #     print(f"成功发送给 {target_friend}: {text}")
-        # else:
-        #     QMessageBox.warning(self, "错误", "未连接到服务器！")
 
     @Slot()
     def rcMenuOfPersonalInfoBar(self, pos, target):
@@ -1442,7 +1409,7 @@ def partyToBar(party: Group) -> MainWindow.PartyBar:
 
 if __name__ == '__main__':
     MMApp = QApplication(sys.argv)
-    Window = MainWindow()
+    Window = MainWindow("A", "123456")
     Window.show()
     MMApp.exec()
 
