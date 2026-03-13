@@ -32,15 +32,15 @@ class UserInterfaceTool:
         else:
             return f"{msg_dt.month}月{msg_dt.day}日"
 
-    @classmethod
-    def get_contact_list(cls) -> list[Contact]:
-        """返回当前登录用户的会话列表（按最后消息时间降序）。"""
-        def sort_key(c: Contact):
-            try:
-                return datetime.strptime(c.last_time, "%Y-%m-%d %H:%M:%S")
-            except (ValueError, TypeError):
-                return datetime.min
-        return sorted(ct.get_contacts(), key=sort_key, reverse=True)
+    # @classmethod
+    # def get_contact_list(cls) -> list[Contact]:
+    #     """返回当前登录用户的会话列表（按最后消息时间降序）。"""
+    #     def sort_key(c: Contact):
+    #         try:
+    #             return datetime.strptime(c.last_time, "%Y-%m-%d %H:%M:%S")
+    #         except (ValueError, TypeError):
+    #             return datetime.min
+    #     return sorted(ct.get_contacts(), key=sort_key, reverse=True)
 
     @classmethod
     def get_formatted_last_time(cls, target_id: str) -> str:

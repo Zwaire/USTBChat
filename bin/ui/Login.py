@@ -217,7 +217,7 @@ class LoginWindow(QWidget):
             self.warning("网络错误")
             return
         
-        # 解析服务器返回消息
+        # 解析服务器返回消息[todo]
         if serverReply['type'] != 'register':
             # 服务器出错， 返回的不是注册信息
             self.warning("服务器出错")
@@ -407,7 +407,7 @@ class LoginWindow(QWidget):
         '''
 
         QMessageBox.warning(self, "", text)
-        raise ValueError("this is a error")
+        # raise ValueError("this is a error")
         return
 
     @Slot()

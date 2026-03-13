@@ -90,7 +90,7 @@ class LoginWindowTool:
                 100_000
         )
         return salt.hex() + '$' + dk.hex()
-
+    # [TODO] 检查找回密码之后是否有后续的对应的注册页面
     @classmethod
     def _request_pwd_find(cls, id: str) -> dict:
         ''' 
@@ -133,8 +133,6 @@ class LoginWindowTool:
         }
 
         response = contact_tool._get_response(request)
-        print(response)
-        print("I am OK")
         if not response:
             return {"error": "no response from server"}
         else:
