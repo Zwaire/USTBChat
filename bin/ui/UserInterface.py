@@ -10,6 +10,7 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+from typing import List
 from PySide6.QtWidgets import (QApplication, QLayoutItem, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
                                QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit,
                                QStackedLayout)
@@ -22,6 +23,7 @@ from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
 from bin.state.ChatModels import Message, Contact, Friend, Group
 from bin.tool.LoginTool import LoginWindowTool as tool
 from bin.tool.UserInterfaceTool import UserInterfaceTool as UITool
+import bin.tool.ContactTool as CT
 
 # 新增一个信号类，用于安全地将子线程收到的网络消息抛给主线程 UI
 class MainSignals(QObject):
@@ -314,6 +316,7 @@ class MainWindow(QWidget):
 
             self.isSelf = isSelf
             self.senderUID = senderUID,
+            # self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
         
             self.initUI()
 
@@ -323,7 +326,7 @@ class MainWindow(QWidget):
         
         def initUI(self):
 
-            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
             self.creWidgets()
             self.applyLayout()
 
@@ -344,18 +347,21 @@ class MainWindow(QWidget):
             
             # 消息内容块
             self.chatContent = QPlainTextEdit()
+            self.chatContent.setFont(Fonts.UniversalPlainFont)
             self.chatContent.setWordWrapMode(QTextOption.WrapMode.WordWrap)
             self.chatContent.setReadOnly(True)
-            self.chatContent.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-            self.chatContent.setMinimumWidth(200)
-            if self.isSelf: self.chatContent.setStyleSheet("background-color: #868686")
+            self.chatContent.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+            # self.chatContent.setMinimumWidth(200)
+            self.chatContent.setStyleSheet("padding: 2px; border: 1px solid #ddd; border-radius: 4px;")
+            if self.isSelf: self.chatContent.setStyleSheet("padding: 2px; border: 1px solid #ddd; border-radius: 4px; background-color: #868686;")
             
         def applyLayout(self):
 
-            self.chatCubeLayout = ClassicLayout.Vertical(ClassicLayout.RTop, ClassicLayout.MinMax, (20, 0, 20, 0), 5) if self.isSelf else ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, (20, 0, 20, 0), 5)
-            self.chatCubeLayout.addWidget(self.chatSendTime, 0)
-            self.chatCubeLayout.addWidget(self.chatSenderID, 0)
-            self.chatCubeLayout.addWidget(self.chatContent, 1)
+            self.chatCubeLayout = ClassicLayout.Vertical(ClassicLayout.RTop, ClassicLayout.MinMax, (20, 0, 20, 0), 5) if self.isSelf else ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.Min, (20, 0, 20, 0), 5)
+            self.chatCubeLayout.addWidget(self.chatSendTime, 0, alignment=Qt.AlignmentFlag.AlignRight if self.isSelf else Qt.AlignmentFlag.AlignLeft)
+            self.chatCubeLayout.addWidget(self.chatSenderID, 0, alignment=Qt.AlignmentFlag.AlignRight if self.isSelf else Qt.AlignmentFlag.AlignLeft)
+            self.chatCubeLayout.addWidget(self.chatContent, 0, alignment=Qt.AlignmentFlag.AlignRight if self.isSelf else Qt.AlignmentFlag.AlignLeft)
+            # self.chatCubeLayout.addStretch(1)
             self.setLayout(self.chatCubeLayout)
 
         def modifySenderID(self, ID: str) -> bool:
@@ -374,6 +380,12 @@ class MainWindow(QWidget):
 
     def __init__(self):
         super().__init__()
+
+        
+
+        self.UserID = "123456"
+        self.CurrentChatID = None
+        self.isCurrentChatGroup = False
 
         # 主窗口属性预设
         self.setWindowTitle("USTBChat")
@@ -541,8 +553,13 @@ class MainWindow(QWidget):
 
         # 消息展示区域
         self.messageDisplaySection = Section((800, 418), Section.Extendable)
+        self.scrollableMessageLayout = QScrollArea()
+        self.scrollableMessageLayout.setWidgetResizable(True)
+        self.scrollableMessageLayout.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scrollableMessageLayout.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.messageDisplayLayout = ClassicLayout.Vertical(constr=ClassicLayout.MinMax, margins=ClassicLayout.NoBorder, spacing=10)
         self.messageDisplaySection.setLayout(self.messageDisplayLayout)
+        self.scrollableMessageLayout.setWidget(self.messageDisplaySection)
 
         # 消息输入区域
         self.messageInputSection = Section((800, 150), Section.Extendable)
@@ -560,7 +577,9 @@ class MainWindow(QWidget):
         # 整个中间区域
         self.middleArea = Section((800, 680), Section.Extendable)
         self.middleLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
-        self.middleLayout.addWidget(self.messageDisplaySection, 1)
+        # self.middleLayout.addWidget(self.messageDisplaySection, 2)
+        self.middleLayout.addWidget(self.scrollableMessageLayout, 2)
+        # self.middleLayout.addStretch(1)
         self.middleLayout.addWidget(Separator(width=1))
         self.middleLayout.addWidget(self.messageInputSection, 1)
         self.middleLayout.addWidget(self.messageSendButtonSection, 0)
@@ -591,7 +610,7 @@ class MainWindow(QWidget):
     def slotsConnect(self):
         '''绑定UI交互事件'''
         # 将“发送”按钮的点击事件连接到 send_message 函数
-        self.messageSendButton.clicked.connect(lambda checked: self.send_message)
+        self.messageSendButton.clicked.connect(lambda checked: self.send_message())
 
         self.newsButton.clicked.connect(lambda checked: self.displayNewsContactBar())
         self.friendsButton.clicked.connect(lambda checked: self.displayFriendsBar())
@@ -625,7 +644,7 @@ class MainWindow(QWidget):
     def initContactList(self) -> bool:
         '''登录后, 从服务器获取消息对象列表, 并显示在左侧边栏'''
 
-        import bin.tool.ContactTool as CT
+        # import bin.tool.ContactTool as CT
 
         response = dict()
         # 向服务器获取
@@ -645,7 +664,7 @@ class MainWindow(QWidget):
         self.newsContactBarList = []
         for x in response['contacts']:
             _ = contactToBar(x)
-            _.hasBeenClicked.connect(lambda uid = _.UID: self.showSpecificChatArea(uid))
+            _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = _.Type: self.showSpecificChatArea(uid, isGroup))
             self.newsContactBarList.append(_)
         # self.newsContactBarList[0].printInfo()
 
@@ -658,7 +677,7 @@ class MainWindow(QWidget):
 
     def getFriendsListFromServer(self) -> bool:
 
-        import bin.tool.ContactTool as CT
+        # import bin.tool.ContactTool as CT
 
         while(True):
             try:
@@ -676,7 +695,7 @@ class MainWindow(QWidget):
         # self.friendsBarList = [friendToBar(x) for x in response['friends']]
         for x in response['friends']:
             _ = friendToBar(x)
-            _.hasBeenClicked.connect(lambda uid = _.UID: self.showSpecificChatArea(uid))
+            _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = False: self.showSpecificChatArea(uid, isGroup))
             self.friendsBarList.append(_)
 
         for i in range(len(self.friendsBarList)):
@@ -686,7 +705,7 @@ class MainWindow(QWidget):
 
     def getGroupsListFromServer(self) -> bool:
 
-        import bin.tool.ContactTool as CT
+        # import bin.tool.ContactTool as CT
 
         while(True):
             try:
@@ -705,7 +724,7 @@ class MainWindow(QWidget):
 
         for x in response['groups']:
             _ = partyToBar(x)
-            _.hasBeenClicked.connect(lambda uid = _.UID: self.showSpecificChatArea(uid))
+            _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = True: self.showSpecificChatArea(uid, isGroup))
             self.partiesBarList.append(_)
 
         for i in range(len(self.partiesBarList)):
@@ -713,50 +732,63 @@ class MainWindow(QWidget):
 
         return True
 
-    @Slot(str)
-    def showSpecificChatArea(self, UID: str):
+    def generateChatRowSection(self, msg: Message) -> Section:
 
-        import bin.tool.ContactTool as CTool
+        _ = self.ChatBar(
+                isSelf=msg.is_self,
+                senderUID=msg.sender_uid,
+                senderNickName=msg.sender_nickname,
+                content=msg.content,
+                time=msg.time
+            )
+
+        isSelfSend = _.isSelf
+
+        # 生成聊天栏布局
+
+        chatRowSection = Section(policy=(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+
+        if isSelfSend:
+            chatRowLayout = ClassicLayout.Horizontal(ClassicLayout.RTop, ClassicLayout.MinMax, (5, 0, 5, 0), 5)
+            chatRowLayout.addStretch(1)
+            chatRowLayout.addWidget(_, 2, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
+        else:
+            chatRowLayout = ClassicLayout.Horizontal(ClassicLayout.LTop, ClassicLayout.MinMax, (5, 0, 5, 0), 5)
+            chatRowLayout.addWidget(_, 2, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            chatRowLayout.addStretch(1)
+
+        chatRowSection.setLayout(chatRowLayout)
+
+        return chatRowSection
+
+    @Slot(str)
+    def showSpecificChatArea(self, UID: str, isGroup: bool):
+
+        # import bin.tool.ContactTool as CTool
 
         print("I am clicked")
+        self.CurrentChatID = UID
+        self.isCurrentChatGroup = isGroup
 
         # 清空聊天区域
         wipeOutChildItemOfLayout(self.messageDisplayLayout)
 
         # 缓存中不存在该UID, 则向服务器请求获取聊天记录
         if not (UID in self.cachedChatHistory.keys()):
-            self.cachedChatHistory.update({UID: CTool.fetch_history(UID)})
+            self.cachedChatHistory.update({UID: CT.fetch_history(UID)})
 
         # 向缓存中读取聊天记录
         chatUpcoming = self.cachedChatHistory[UID]
 
         # 将聊天记录转换为可使用的Qt组件
         for i in range(len(chatUpcoming)):
-            _ = self.ChatBar(
-                isSelf=chatUpcoming[i].is_self,
-                senderUID=chatUpcoming[i].sender_uid,
-                senderNickName=chatUpcoming[i].sender_nickname,
-                content=chatUpcoming[i].content,
-                time=chatUpcoming[i].time
-            )
+            
+            chatRowSection = self.generateChatRowSection(chatUpcoming[i])
 
-
-            isSelfSend = _.isSelf
-
-            # 生成聊天栏布局
-
-            if isSelfSend:
-                chatRowLayout = ClassicLayout.Horizontal(ClassicLayout.RTop, ClassicLayout.Min, (5, 0, 5, 0), 5)
-                chatRowLayout.addStretch(1)
-                chatRowLayout.addWidget(_, 2, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
-            else:
-                chatRowLayout = ClassicLayout.Horizontal(ClassicLayout.LTop, ClassicLayout.Min, (5, 0, 5, 0), 5)
-                chatRowLayout.addWidget(_, 2, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-                chatRowLayout.addStretch(1)
-
-            # 将聊天布局添加至聊天区域
-            self.messageDisplayLayout.addLayout(chatRowLayout, 0)
+            # self.messageDisplayLayout.addLayout(chatRowLayout, 0)
+            self.messageDisplayLayout.addWidget(chatRowSection, 0)
         
+        # self.messageDisplayLayout.addStretch(1)
         self.messageDisplayLayout.update()
             
     # def getHistory
@@ -794,6 +826,11 @@ class MainWindow(QWidget):
     @Slot()
     def send_message(self):
         '''处理发送按钮点击事件'''
+
+        # 看当前聊天的UID
+        if not self.CurrentChatID:
+            return
+
         # 获取输入框的纯文本
         text = self.messageInputer.toPlainText().strip()
         if not text:
@@ -806,16 +843,55 @@ class MainWindow(QWidget):
         
         # 注意：由于目前左侧列表没做好，我们暂时无法通过点击来“选中”好友。
         # 为了让代码跑通，我们先强行指定一个目标好友 (建议去 MySQL 注册一个名为 test 的账号用来测试)
-        target_friend = "test" 
+        # target_friend = "test" 
 
         # 构造符合《通信接口.md》规范的报文
         # packet = {
         #     "type": "message",
-        #     "username": my_uid,
-        #     "friendname": target_friend,
+        #     "username": self.UserID,
+        #     "friendname": self.CurrentChatID,
         #     "message": text
         # }
         
+        sendContent = self.messageInputer.toPlainText().strip()
+
+        sendSuccess = CT.send_message(
+            self.CurrentChatID,
+            sendContent,
+            self.isCurrentChatGroup
+        )
+
+        sendSuccess = True      # 测试用
+
+        if not sendSuccess:
+            QMessageBox.warning(self, "", "发送失败")
+            return
+        
+        # 发送成功, 在本地显示自己发送的消息
+
+        msg = Message(
+            sender_uid=self.UserID,
+            sender_nickname=self.personalID.text(),
+            content=sendContent,
+            time="",
+            is_self=True
+        )
+
+        try:
+            historyQuote: List[Message] = self.cachedChatHistory[self.CurrentChatID]
+        except:
+            QMessageBox.warning(self, "", "发送的聊天对象不存在")
+            return
+        
+        self.messageInputer.clear()
+        historyQuote.append(msg)
+        
+        _ = self.generateChatRowSection(msg)
+        self.messageDisplayLayout.addWidget(_)
+        scrollBar = self.scrollableMessageLayout.verticalScrollBar()
+        scrollBar.setValue(scrollBar.maximum())
+        self.messageDisplayLayout.update()
+
         # if self.client:
         #     # 1. 把消息发给服务器
         #     self.client.send_data(packet)
