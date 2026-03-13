@@ -126,14 +126,12 @@ class ChatServer:
                         salt_hex = ""
                         dk_hex = ""
                         print("错误：拼接字符串格式不正确，缺少分隔符 $")
+                    print(dk_hex)
+                    print(salt_hex)
 
                     res = db.register(username, dk_hex, salt_hex)
                     # status: 0为成功，1为已存在
-                    conn.sendall(encode_msg({
-                        "type": "register",
-                        "status": res.get("status"),
-                        "warnings": "The user exists" if res.get("status") == 1 else ""
-                    }))
+                    conn.sendall(encode_msg(res))
 
                 # 2. 登录需求返回密码salt
                 elif msg_type=="seed":
@@ -145,9 +143,14 @@ class ChatServer:
                 elif msg_type=="request_pwd_find":
                     username=msg.get("username")
                     res=db.request_pwd_find(username)
-                    conn.sendall(encode_msg(res))
                     if res.get("status")==0:
-                        db.change_code(msg.get("username"), msg.get("code"),msg.get("seed"))
+                        parts = msg.get("code").split('$', 1)  # split(分隔符, 最大拆分次数)
+                        if len(parts) == 2:
+                            salt_hex = parts[0]  # 第一部分：盐值的十六进制字符串
+                            dk_hex = parts[1]    # 第二部分：派生密钥的十六进制字符串
+                        print(dk_hex)
+                        print(salt_hex)
+                        db.change_code(msg.get("username"), dk_hex,salt_hex)
                         conn.sendall(encode_msg(res))
                     else:
                         conn.sendall(encode_msg(res))
@@ -155,10 +158,12 @@ class ChatServer:
                 # 4. 登录请求
                 elif msg_type == "login":
                     username = msg.get("username")
+                    print(username)
                     code = msg.get("code")
                     res = db.log_in(username, code, addr[0])
                     # status: 0为成功，2为密码错误等
                     if res.get("status") == 0:
+                        print("jiujiuwo")
                         current_user = username
                         with self.lock: 
                             self.clients[current_user] = {"conn": conn, "ip": addr[0]}
@@ -166,13 +171,16 @@ class ChatServer:
                         # conn.sendall(encode_msg({"type": "login", "status": True}))
                         # 返回 uid, nickname, friends, groups。
                         # 注：目前 data.py 没有提供 get_friends 等接口，暂时传入空列表以保证客户端 AppState 能够正确完成初始化。未来数据库支持后在此替换即可。
+
                         conn.sendall(encode_msg(res))
                     else:
+                        # [TODO] 和文档的返回密码对不上
                         conn.sendall(encode_msg(res))
 
                 # 5. 添加好友
                 elif msg_type == "add_friend":
                     res = db.add_friend(msg.get("username"), msg.get("friendname"))
+                    # [TODO] 和文档的返回密码对不上
                     conn.sendall(encode_msg(res))
 
                 # 6. 私聊消息
@@ -181,6 +189,7 @@ class ChatServer:
                     target = msg.get("friendname")
                     content = msg.get("message")
                     # 保存到数据库
+                    print(self.clients)
                     db.save_message(sender, target, content)
                     # 转发给目标用户
                     self.send_private(target, msg)
@@ -242,17 +251,7 @@ class ChatServer:
                     groupname = msg.get("groupname")
                     res = db.create_group(groupname, username)
 
-                    status = False
-                    if type(res) == dict:
-                        if res.get("status") == 0 or res.get("status") == 1:
-                            status = True
-
-                    conn.sendall(encode_msg({
-                        "type": "create_group",
-                        "status": status,
-                        "gid": groupname if groupname is not None else "",
-                        "warnings": "" if status else "Create group failed"
-                    }))
+                    conn.sendall(encode_msg(res))
 
                 # 12. 加入群
                 elif msg_type == "join_group":
@@ -262,17 +261,7 @@ class ChatServer:
                     groupname = msg.get("groupname")
                     res = db.add_group_member(groupname, username)
 
-                    status = False
-                    if type(res) == dict:
-                        if res.get("status") == 0 or res.get("status") == 1:
-                            status = True
-
-                    conn.sendall(encode_msg({
-                        "type": "join_group",
-                        "status": status,
-                        "gid": groupname if groupname is not None else "",
-                        "warnings": "" if status else "Join group failed"
-                    }))
+                    conn.sendall(encode_msg(res))
 
                 # 13. 退群
                 elif msg_type == "leave_group":
@@ -282,14 +271,7 @@ class ChatServer:
                     groupname = msg.get("groupname")
                     res = db.remove_group_member(groupname, username)
 
-                    status = True if res.get("status") == 0 else False
-
-                    conn.sendall(encode_msg({
-                        "type": "leave_group",
-                        "status": status,
-                        "gid": groupname if groupname is not None else "",
-                        "warnings": "" if status else "Leave group failed"
-                    }))
+                    conn.sendall(encode_msg(res))
 
                 # 13. 获取群成员
                 elif msg_type == "get_group_members":
@@ -298,19 +280,13 @@ class ChatServer:
                     res = self.normalize_friend_list(res)
                     conn.sendall(encode_msg({
                         "type": "group_members",
-                        "gid": groupname if groupname is not None else "",
+                        "gid": groupname ,
                         "members": res
                     }))
 
                 # 14. 获取历史记录
                 elif msg_type == "fetch_history":
                     username = msg.get("username")
-                    if username is None:
-                        username = current_user
-
-                    target = msg.get("target")
-                    if target is None:
-                        target = msg.get("target_id")
 
                     messages = []
                     is_group = False
@@ -352,10 +328,12 @@ class ChatServer:
     def send_private(self, target_user, msg_dict):
         """私发消息"""
         data = encode_msg(msg_dict)
+        print("进入发送消息")
         # 获取互斥锁
         with self.lock:
             if target_user in self.clients:
                 try:
+                    print("开始发送")
                     # 只针对target客户
                     self.clients[target_user]["conn"].sendall(data)
                     # # 同时让发送者在本地也能看到自己发送的消息（也就是对发送者这个用户进行一次信息发送），由于这个逻辑在if中，保证了信息是在发送过去后才回显

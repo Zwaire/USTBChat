@@ -28,6 +28,7 @@ class ChatClient:
         while self.running:
             try:
                 msg = decode_msg(self.socket)
+                #print(f"Received message: {msg}")
                 if msg:
                     try:
                         self.callback(msg)
