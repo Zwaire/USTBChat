@@ -211,7 +211,7 @@ class LoginWindow(QWidget):
             return
         
         # 解析服务器返回消息[todo]
-        if serverReply['type'] != 'register':
+        if serverReply['type'] != 'request_pwd_find':
             # 服务器出错， 返回的不是注册信息
             self.warning("服务器出错")
         
@@ -220,7 +220,7 @@ class LoginWindow(QWidget):
             self.warning("用户不存在")
         elif serverReply['status'] == 0:
             # 找回密码成功, 可直接登录
-            self.warning("密码已重置, 可用任意密码登录")
+            self.warning("密码已重置")
         else:
             self.warning("服务器返回意料之外的状态码")
     
@@ -400,7 +400,7 @@ class LoginWindow(QWidget):
         '''
 
         QMessageBox.warning(self, "", text)
-        raise ValueError("this is a error")
+        # raise ValueError("this is a error")
         return
 
     @Slot()

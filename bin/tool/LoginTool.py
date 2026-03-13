@@ -101,10 +101,11 @@ class LoginWindowTool:
             "status": 0
         }
         '''
+        encrypted = cls._pwd_encryption(_pwd)
         request = {
             "type": "request_pwd_find",
             "username": id,
-            "code": _pwd,
+            "code": encrypted,
             "ip": LoginInfo._get_localip()
         }
         response = contact_tool._get_response(request)
