@@ -11,12 +11,8 @@ from CommonCouple import TextInput, Button, ClassicLayout, Fonts
 from bin.MessageFormat import LoginInfo
 from bin.tool.LoginTool import LoginWindowTool as tool
 
-# 导入改造好的 ChatClient ，引入全局状态单例
-from core.network_client import ChatClient
-import bin.tool.ContactTool as ct
-
-class NetworkSignals(QObject):
-    msg_received = Signal(dict)
+# class NetworkSignals(QObject):
+#     msg_received = Signal(dict)
 
 class LoginWindow(QWidget):
     '''
@@ -46,16 +42,7 @@ class LoginWindow(QWidget):
         self.setWindowTitle("登录")                # 窗口标题
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setFixedSize(600, 320)               # 窗口尺寸
-
-        # 初始化网络模块
-        self.signals = NetworkSignals()
-        # self.signals.msg_received.connect(self.handle_server_response)
         
-        # 将ChatClient收到的消息通过信号发送到主线程
-        self.client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg))
-        # 连接到服务器(用的本地服务器，这里写了本地回环地址)
-        self.client.connect("127.0.0.1", 8888)
-        ct.on_login(self.client, "", "", [], [])  # 初始化 ContactTool 的客户端引用
         self.initUI()
 
     def initUI(self):

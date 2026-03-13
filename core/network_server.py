@@ -145,7 +145,7 @@ class ChatServer:
                 elif msg_type=="request_pwd_find":
                     username=msg.get("username")
                     res=db.request_pwd_find(username)
-                    conn.sendall(encode_msg)
+                    conn.sendall(encode_msg(res))
                     if res.get("status")==0:
                         db.change_code(msg.get("username"), msg.get("code"),msg.get("seed"))
                         conn.sendall(encode_msg(res))
@@ -158,7 +158,7 @@ class ChatServer:
                     code = msg.get("code")
                     res = db.log_in(username, code, addr[0])
                     # status: 0为成功，2为密码错误等
-                    if res.get("statuts") == 0:
+                    if res.get("status") == 0:
                         current_user = username
                         with self.lock: 
                             self.clients[current_user] = {"conn": conn, "ip": addr[0]}
@@ -244,8 +244,7 @@ class ChatServer:
 
                     status = False
                     if type(res) == dict:
-                        if res.get("status") == 0 or res.get("status") == 1 or res.get("statuts") == 0 or res.get(
-                                "statuts") == 1:
+                        if res.get("status") == 0 or res.get("status") == 1:
                             status = True
 
                     conn.sendall(encode_msg({
@@ -265,8 +264,7 @@ class ChatServer:
 
                     status = False
                     if type(res) == dict:
-                        if res.get("status") == 0 or res.get("status") == 1 or res.get("statuts") == 0 or res.get(
-                                "statuts") == 1:
+                        if res.get("status") == 0 or res.get("status") == 1:
                             status = True
 
                     conn.sendall(encode_msg({
