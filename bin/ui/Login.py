@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt, Slot
 from bin.ui.CommonCouple import TextInput, Button, ClassicLayout, Fonts
 from bin.MessageFormat import LoginInfo
 from bin.tool.LoginTool import LoginWindowTool as tool
+from typing import Tuple
 
 # class NetworkSignals(QObject):
 #     msg_received = Signal(dict)
@@ -35,6 +36,8 @@ class LoginWindow(QWidget):
     6. 若要登录账户, 登录成功则进入主界面, 否则提示错误
     '''
 
+    iLoveLinux = Signal(Tuple[str, str])
+
     def __init__(self):
         super().__init__()
 
@@ -42,7 +45,7 @@ class LoginWindow(QWidget):
         self.setWindowTitle("登录")                # 窗口标题
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setFixedSize(600, 320)               # 窗口尺寸
-        
+
         self.initUI()
 
     def initUI(self):
@@ -300,6 +303,7 @@ class LoginWindow(QWidget):
             return False
         elif replyStatue == 0:
             # 登录成功, 进入主界面
+            self.iLoveLinux.emit(serverReply['id'], serverReply['name'])
             self.enterMainInterface()
             return True
         elif replyStatue == 8:

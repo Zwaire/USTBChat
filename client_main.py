@@ -28,7 +28,7 @@ class USTBChatClient:
         self.signals = NetworkSignals()
         self.signals.msg_received.connect(self.handle_server_response)
         self.chat_client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg))
-        is_connected = self.chat_client.connect("172.28.228.87", 8888)
+        is_connected = self.chat_client.connect("172.17.0.1", 8888)
         if not is_connected:
             print("NetworkError")
         else:
@@ -36,14 +36,15 @@ class USTBChatClient:
         ContactTool.on_login(self.chat_client, "", "", [], [])
 
         self.login_window = LoginWindow()
-        self.login_window.enterMainInterface = self._on_login_success
+        self.login_window.iLoveLinux.connect(lambda uid, name: self._on_login_success(uid, name))
+        # self.login_window.enterMainInterface = self._on_login_success
 
-    def _on_login_success(self):
+    def _on_login_success(self, uid: str, name: str):
         global _main_window
         # 关闭登录窗口，打开主界面
         if self.login_window:
             self.login_window.close()
-        _main_window = MainWindow()
+        _main_window = MainWindow(uid, name)
         _main_window.show()
 
     def handle_server_response(self, msg: dict):
