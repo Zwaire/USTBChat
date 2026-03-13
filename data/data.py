@@ -133,6 +133,15 @@ def find_users(name):
 
     return len(results) > 0
 
+def get_username_by_uid(uid):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT name FROM users WHERE id=%s", (uid,))
+    row = cursor.fetchone()
+    cursor.close()
+    db.close()
+    return row[0] if row else None
+
 def add_friend(user_name, friend_name):
     db = get_db()
     cursor = db.cursor()
@@ -195,7 +204,7 @@ def create_group(group_name, owner_name):
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "create_group", "status": 0}
+            return {"type": "create_group", "status": 0, "gid": f"{group_id:06d}"}
         else:
             db.commit()
             cursor.close()
@@ -243,7 +252,7 @@ def add_group_member(group_name, new_name):
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "add_group", "status": 0,"gid":group_id,"group_name":group_name}
+            return {"type": "add_group", "status": 0,"gid":f"{group_id:06d}","group_name":group_name}
     else:
         cursor.close()
         db.close()
@@ -387,12 +396,10 @@ def get_friends(name):
 def get_group_list(name):
     db = get_db()
     cursor = db.cursor()
-
     user_id = find(name, "users")
     sql = "select group_id from groups_member where user_id=%s"
     cursor.execute(sql, (user_id,))
     results = cursor.fetchall()
-
     groups = []
     for item in results:
         group_id = item[0]
@@ -401,10 +408,9 @@ def get_group_list(name):
         result_group = cursor.fetchone()
         if result_group:
             groups.append({
-                "gid": result_group[1],
+                "gid": f"{group_id:06d}",
                 "name": result_group[1]
             })
-
     db.commit()
     return groups
 

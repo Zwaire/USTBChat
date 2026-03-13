@@ -259,6 +259,13 @@ class ChatServer:
                     groupname = msg.get("groupname")
                     res = db.create_group(groupname, username)
 
+                    if res.get("status") == 0:
+                        uids = msg.get("uids", [])
+                        for uid in uids:
+                            member_name = db.get_username_by_uid(uid)
+                            if member_name and member_name != username:
+                                db.add_group_member(groupname, member_name)
+
                     conn.sendall(encode_msg(res))
 
                 # 12. 加入群
