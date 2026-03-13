@@ -6,7 +6,9 @@ import threading
 from core.protocol import encode_msg, decode_msg
 from utils.logger import get_logger
 
-from datetime import datetime         #新增
+import threading
+from datetime import datetime
+from ai_client import AIServiceClient
 
 # 引入 ustbchat 的数据库操作模块
 from data import data as db
@@ -23,6 +25,8 @@ class ChatServer:
         # 记录在线用户 {username: {"conn": socket, "ip": ip_addr}}
         self.clients = {}
         self.lock = threading.Lock()
+        self.ai_client = AIServiceClient("http://192.168.182.128:5001", timeout=60)
+        self.ai_name = "智能助手"
 
     def normalize_friend_list(self, data):
         result = []
@@ -189,7 +193,7 @@ class ChatServer:
                     db.save_message(sender, target, content)
                     # 转发给目标用户
                     self.send_private(target, msg)
-
+                    
                 # 7. 群聊消息
                 elif msg_type == "group_message":
                     sender = msg.get("username")
@@ -303,6 +307,12 @@ class ChatServer:
                         "target_id": target if target is not None else "",
                         "messages": messages
                     }))
+                    
+                #15. 获取群聊氛围
+                elif msg_type == "get_group_atmosphere":
+                    groupname = msg.get("groupname")
+                    res = self.handle_group_atmosphere(groupname)
+                    conn.sendall(encode_msg(res))
 
         except ConnectionResetError:
             pass
