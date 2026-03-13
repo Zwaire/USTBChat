@@ -1048,7 +1048,7 @@ class MainWindow(QWidget):
             break
 
         # 解析服务器消息
-        print("------------------", response["type"])
+        # print("------------------", response["type"])
         if response['type'] != 'friend_list':
             return False
         

@@ -180,7 +180,6 @@ class ChatServer:
                 # 5. 添加好友
                 elif msg_type == "add_friend":
                     res = db.add_friend(msg.get("username"), msg.get("friendname"))
-                    # [TODO] 和文档的返回密码对不上
                     conn.sendall(encode_msg(res))
 
                 # 6. 私聊消息

@@ -175,6 +175,7 @@ def create_group(group_name, owner_name):
     results = cursor.fetchall()
 
     if len(results) == 0:
+        print("创建群组:", group_name, "，群主:", owner_name)
         sql = "INSERT INTO groups_list (name) VALUES (%s)"
         cursor.execute(sql, (group_name,))
 
@@ -355,7 +356,6 @@ def find_group_ip(name):
         db.close()
         return None
     
-# [TODO] 下面的函数风格需要对应上，基本功能目前差不多
 def get_friends(name):
     db = get_db()
     cursor = db.cursor()
@@ -385,12 +385,7 @@ def get_friends(name):
 
 
 def get_group_list(name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor()
 
     user_id = find(name, "users")
@@ -419,12 +414,7 @@ def get_groups(name):
 
 
 def get_group_members(group_name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor()
 
     sql = "select * from groups_list where name=%s"
@@ -454,12 +444,7 @@ def get_group_members(group_name):
 
 
 def get_history(user_name, friend_name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor(dictionary=True)
 
     # 先获取用户ID
@@ -506,12 +491,7 @@ def get_history(user_name, friend_name):
 
 
 def get_group_history(group_name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor(dictionary=True)
 
     # 先获取群组ID
@@ -558,12 +538,7 @@ def get_group_history(group_name):
 
 
 def remove_group_member(group_name, user_name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor()
 
     sql = "select * from groups_list where name=%s"

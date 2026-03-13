@@ -142,7 +142,7 @@ def request_leave_group(gid: str) -> dict:
     """发送退群请求。服务器应返回 {"type":"leave_group","status":0}"""
     return _get_response({"type": "leave_group", "username": _nickname, "gid": gid})
 
-def request_group_members(gid: str) -> dict:
+def request_group_members(groupname: str) -> dict:
     """
     请求群成员列表。服务器应返回 
     {
@@ -151,7 +151,7 @@ def request_group_members(gid: str) -> dict:
         "members":[...]
     }
     """
-    return _get_response({"type": "get_group_members", "username": _nickname, "gid": gid})
+    return _get_response({"type": "get_group_members", "username": _nickname, "groupname": groupname})
 
 def request_create_group(group_name: str, uids: list[str]) -> dict:
     """
@@ -164,7 +164,7 @@ def request_create_group(group_name: str, uids: list[str]) -> dict:
         return {"type": "create_group", "status": -1, "msg": "群名不能为空"}
     if not uids or not all(isinstance(uid, str) and uid.strip() for uid in uids):
         return {"type": "create_group", "status": -1, "msg": "uid列表不能为空，且所有uid必须为非空字符串"}
-    return _get_response({"type": "create_group", "username": _nickname, "group_name": group_name, "uids": uids})
+    return _get_response({"type": "create_group", "username": _nickname, "groupname": group_name, "uids": uids})
 
 # ── 消息操作 ──────────────────────────────────────────────────
 
