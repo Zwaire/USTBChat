@@ -22,12 +22,13 @@ class USTBChatClient:
     def __init__(self, app: QApplication):
         """类初始化：一次性完成网络、信号、界面、工具类的初始化"""
         self.app = app 
+        self.running = False
         self.login_window: Optional[LoginWindow] = None  
         self.chat_client: Optional[ChatClient] = None    
 
         self.signals = NetworkSignals()
         self.signals.msg_received.connect(self.handle_server_response)
-        self.chat_client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg))
+        self.chat_client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg), t=self.handle_server_response)
         is_connected = self.chat_client.connect("127.0.0.1", 8888)
         if not is_connected:
             print("NetworkError")
@@ -49,10 +50,20 @@ class USTBChatClient:
         _main_window = MainWindow(uid, name)
         _main_window.show()
 
+    # def recvServer(self, targetFunction):
+
+    #     while self.running:
+    #         try:
+    #             self.chat_client.recv
+
+
     def handle_server_response(self, msg: dict):
         '''
         处理传递的消息，此处的消息类别只有Message和group_message两种
         '''
+
+        print(msg)
+
         if not msg or not isinstance(msg, dict):
             return
         

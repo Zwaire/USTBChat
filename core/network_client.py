@@ -6,11 +6,12 @@ from utils.logger import get_logger
 logger = get_logger("Client")
 
 class ChatClient:
-    def __init__(self, callback):
+    def __init__(self, callback, t):
         self.socket = None
         self.username = None
         self.callback = callback
         self.running = False
+        self.t = t
 
     def connect(self, host, port):
         """只建立物理连接，不发送业务报文"""
@@ -18,24 +19,30 @@ class ChatClient:
         try:
             self.socket.connect((host, int(port)))
             self.running = True
-            threading.Thread(target=self.receive_loop, daemon=True).start()
+            threading.Thread(target= lambda t = self.t: self.receive_loop(t), daemon=True).start()
             return True
         except Exception as e:
             logger.error(f"连接失败: {e}")
             return False
 
-    def receive_loop(self):
+    def receive_loop(self, targetFunction):
         while self.running:
             try:
-                msg = decode_msg(self.socket)
-                #print(f"Received message: {msg}")
-                if msg:
-                    try:
-                        self.callback(msg)
-                    except Exception:
-                        pass
-                else:
+                # msg = decode_msg(self.socket)
+                # #print(f"Received message: {msg}")
+                # if msg:
+                #     try:
+                #         self.callback(msg)
+                #     except Exception:
+                #         pass
+                # else:
+                #     break
+                data = self.socket.recv(1024) # type: ignore
+                if not data:
                     break
+                else:
+                    message = data.decode('utf-8')
+                    targetFunction(message)
             except Exception:
                 break
         self.disconnect()
