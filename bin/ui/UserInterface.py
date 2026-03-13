@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from typing import List, Dict, Optional
 from PySide6.QtWidgets import (QApplication, QLayoutItem, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
                                QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit, QCheckBox,
-                               QStackedLayout, QMenu)
+                               QStackedLayout, QMenu, QFileDialog)
 from PySide6.QtGui import QMouseEvent, QTextOption, QAction
 from PySide6.QtCore import Qt, Slot, QObject, Signal
 from bin.ui.CommonCouple import Section, Fonts, Button, ClassicLayout, Separator, TextInput
@@ -858,6 +858,7 @@ class MainWindow(QWidget):
 
         # 消息发送按钮
         self.messageSendButton = Button("发送", '发送当前输入消息', (90, 32), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+        self.sendTxtButton = Button("发送文件", "选择并发送本地TXT文件内容", (100, 32), Fonts.sizedFont(Fonts.UniversalPlainFont, 11))
     
     def creRightWidgets(self):
         '''
@@ -986,8 +987,9 @@ class MainWindow(QWidget):
 
         # 消息发送按钮区域
         self.messageSendButtonSection = Section((800, 50), Section.HExtendable)
-        self.messageSendButtonLayout = ClassicLayout.Horizontal(ClassicLayout.CRight, ClassicLayout.Default, (20, 0, 20, 20), 0)
+        self.messageSendButtonLayout = ClassicLayout.Horizontal(ClassicLayout.CRight, ClassicLayout.Default, (20, 0, 20, 20), 8)
         self.messageSendButtonLayout.addStretch(1)
+        self.messageSendButtonLayout.addWidget(self.sendTxtButton, 0, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
         self.messageSendButtonLayout.addWidget(self.messageSendButton, 0, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
         self.messageSendButtonSection.setLayout(self.messageSendButtonLayout)
 
@@ -1045,6 +1047,7 @@ class MainWindow(QWidget):
         '''绑定UI交互事件'''
         # 将“发送”按钮的点击事件连接到 send_message 函数
         self.messageSendButton.clicked.connect(lambda checked: self.send_message())
+        self.sendTxtButton.clicked.connect(lambda checked: self.send_txt_file_as_message())
         self.quickAddFriendButton.clicked.connect(lambda checked: self.openFriendAddWindow())
         self.quickJoinGroupButton.clicked.connect(lambda checked: self.openPartyAddWindow())
         self.quickCreateGroupButton.clicked.connect(lambda checked: self.openCreatePartyWindow())
@@ -1434,35 +1437,38 @@ class MainWindow(QWidget):
     def send_message(self):
         '''处理发送按钮点击事件'''
 
+        # 获取输入框的纯文本
+        text = self.messageInputer.toPlainText()
+        if not text.strip():
+            return # 没写字就不发
+        self._send_text_message(text, clear_input=True)
+
+    def _send_text_message(self, text: str, clear_input: bool) -> bool:
+        '''发送普通文本消息，并将发送结果同步到当前聊天区'''
+
         # 看当前聊天的UID
         if not self.CurrentChatID:
-            return
+            return False
 
-        # 获取输入框的纯文本
-        text = self.messageInputer.toPlainText().strip()
-        if not text:
-            return # 没写字就不发
-            
-        from bin.state.ChatModels import Message
-        
-        sendContent = text
+        send_content = str(text)
+        if not send_content.strip():
+            return False
 
-        sendSuccess = CT.send_message(
+        send_success = CT.send_message(
             self.CurrentChatID,
-            sendContent,
+            send_content,
             self.isCurrentChatGroup
         )
 
-        if not sendSuccess:
+        if not send_success:
             QMessageBox.warning(self, "", "发送失败")
-            return
-        
-        # 发送成功, 在本地显示自己发送的消息
+            return False
 
+        # 发送成功, 在本地显示自己发送的消息
         msg = Message(
             sender_uid=self.UserID,
             sender_nickname=self.personalID.text(),
-            content=sendContent,
+            content=send_content,
             time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             is_self=True
         )
@@ -1473,15 +1479,55 @@ class MainWindow(QWidget):
             historyQuote: List[Message] = self.cachedChatHistory[cache_key]
         except Exception:
             historyQuote = self._fetch_chat_history(str(self.CurrentChatID), self.isCurrentChatGroup)
-        
-        self.messageInputer.clear()
+
+        if clear_input:
+            self.messageInputer.clear()
         historyQuote.append(msg)
-        
+
         _ = self.generateChatRowSection(msg)
         self.messageDisplayLayout.addWidget(_)
         scrollBar = self.scrollableMessageLayout.verticalScrollBar()
         scrollBar.setValue(scrollBar.maximum())
         self.messageDisplayLayout.update()
+        return True
+
+    @Slot()
+    def send_txt_file_as_message(self):
+        '''选择本地TXT文件，并将文件全文作为普通文本消息发出'''
+
+        if not self.CurrentChatID:
+            QMessageBox.information(self, "", "请先选择一个会话")
+            return
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择TXT文件",
+            os.path.expanduser("~"),
+            "Text Files (*.txt);;All Files (*)"
+        )
+        if not file_path:
+            return
+
+        text_content = None
+        for encoding in ("utf-8", "utf-8-sig", "gb18030"):
+            try:
+                with open(file_path, "r", encoding=encoding) as f:
+                    text_content = f.read()
+                break
+            except UnicodeDecodeError:
+                continue
+            except OSError:
+                QMessageBox.warning(self, "", "读取文件失败，请检查文件权限")
+                return
+
+        if text_content is None:
+            QMessageBox.warning(self, "", "无法识别该TXT编码，请将文件保存为UTF-8后重试")
+            return
+        if not text_content.strip():
+            QMessageBox.information(self, "", "该TXT文件内容为空，未发送")
+            return
+
+        self._send_text_message(text_content, clear_input=False)
 
     def refresh_all_lists(self, show_tip: bool = False):
         ok_contacts = self.initContactList()
