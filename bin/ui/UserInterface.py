@@ -128,6 +128,8 @@ class AddFriendPartyWindow(QWidget):
 class CreatePartyWindow(QWidget):
     '''创建群聊时的窗口'''
 
+    createSuccess = Signal()
+
     class OptionFriendBar(QWidget):
         '''
         现在我每写一个class我心脏都得停跳一拍
@@ -225,6 +227,7 @@ class CreatePartyWindow(QWidget):
 
         self.creWidgets()
         self.applyLayout()
+        self.slotsConnect()
 
     def creWidgets(self):
 
@@ -305,10 +308,40 @@ class CreatePartyWindow(QWidget):
         self.setLayout(self.mainLayout)
 
     def slotsConnect(self):
-        pass
+        
+        self.confirmButton.clicked.connect(lambda checked: self.onConfirmButton())
 
     def onConfirmButton(self):
         '''点击确认按钮, 想服务器发送创建群聊请求'''
+
+        # print("WWW")
+        groupName = self.partyName.getInput()
+        result = tool._is_name_not_uid(groupName)
+
+        if not result:
+            QMessageBox.warning(self, "", "群聊名称不合法")
+            return
+
+        hahahahaha = []
+        for i in range(self.friendsListLayout.count()):
+            
+            
+            uid: CreatePartyWindow.OptionFriendBar = self.friendsListLayout.itemAt(i).widget() #type: ignore
+            # assert uid is CreatePartyWindow.OptionFriendBar
+
+            if uid.selected:
+                hahahahaha.append(uid.UID)
+
+        try:
+            CT.request_create_group(groupName, hahahahaha)
+        except:
+            QMessageBox.warning(self, "", "服务器不给你创建群聊")
+            return
+
+        self.partyName.clearInput()
+        # print("chenggong?")
+
+        self.createSuccess.emit()
 
 
 class MainWindow(QWidget):
@@ -1293,7 +1326,7 @@ class MainWindow(QWidget):
             friendsList = [Friend(x.UID, x.Name) for x in self.friendsBarList]
 
             self.createPartyWindow = CreatePartyWindow(friendsList)
-            # self.createPartyWindow.addSuccess.connect(lambda: self.getGroupsListFromServer())
+            self.createPartyWindow.createSuccess.connect(lambda: self.getGroupsListFromServer())
             self.createPartyWindow.show()
         return
 
