@@ -261,6 +261,7 @@ class ChatServer:
 
                     if res.get("status") == 0:
                         uids = msg.get("uids", [])
+                        
                         for uid in uids:
                             member_name = db.get_username_by_uid(uid)
                             if member_name and member_name != username:
@@ -301,21 +302,22 @@ class ChatServer:
 
                 # 14. 获取历史记录
                 elif msg_type == "get_history":
-                    username = msg.get("username")
+                    target = msg.get("target") or msg.get("target_id") or msg.get("username")
 
                     messages = []
                     is_group = False
 
-                    group_list = db.get_group_list(username)
+                    group_list = db.get_group_list(current_user)
                     for g in group_list:
-                        if type(g) == dict and str(g.get("gid")) == str(target):
+                        if type(g) == dict and (str(g.get("gid")) == str(target) or str(g.get("name")) == str(target)):
                             is_group = True
+                            target = g.get("name")
                             break
 
                     if is_group:
                         messages = db.get_group_history(target)
                     else:
-                        messages = db.get_history(username, target)
+                        messages = db.get_history(current_user, target)
 
                     conn.sendall(encode_msg({
                         "type": "history",
