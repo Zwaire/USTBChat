@@ -193,7 +193,11 @@ class ChatServer:
                     db.save_message(sender, target, content)
                     # 转发给目标用户
                     self.send_private(target, msg)
-                    
+                    threading.Thread(
+                        target=self.handle_ai_private,
+                        args=(sender, target, content, msg),
+                        daemon=True
+                    ).start()
                 # 7. 群聊消息
                 elif msg_type == "group_message":
                     sender = msg.get("username")
@@ -203,7 +207,11 @@ class ChatServer:
                     db.save_group_message(sender, groupname, content)
                     # 群聊广播逻辑 (遍历群成员发送)
                     self.broadcast(msg)
-
+                    threading.Thread(
+                        target=self.handle_ai_group,
+                        args=(sender, groupname, content, msg),
+                        daemon=True
+                    ).start()
                 # 8. 获取好友列表
                 elif msg_type == "get_friend_list":
                     username = msg.get("username")
