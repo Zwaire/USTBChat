@@ -99,19 +99,19 @@ def log_in(name, code, ip):
         results_two = cursor.fetchall()
 
         if len(results_two) > 0:
-            sql = "UPDATE user_sessions SET ip=INET_ATON(%s), time=NOW(), name=%s, status=%s WHERE user_id=%s"
-            cursor.execute(sql, (ip, name, 1, user[0]))
+            sql = "UPDATE user_sessions SET ip=INET_ATON(%s), login_time=NOW(),  status=%s WHERE user_id=%s"
+            cursor.execute(sql, (ip, 1, user[0]))
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "login", "status": 0}
+            return {"type": "login", "status": 0,"id":user[0],"name":user[1]}
         else:
-            sql = "INSERT INTO user_sessions (user_id, name, ip, login_time, time, status) VALUES (%s, %s, INET_ATON(%s), NOW(), NOW(), %s)"
-            cursor.execute(sql, (user[0], name, ip, 1))
+            sql = "INSERT INTO user_sessions (user_id,  ip, login_time,  status) VALUES (%s, INET_ATON(%s), NOW(), %s)"
+            cursor.execute(sql, (user[0],  ip, 1))
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "login", "status": 0}
+            return {"type": "login", "status": 0,"id":user[0],"name":user[1]}
     else:
         cursor.close()
         db.close()
@@ -131,7 +131,6 @@ def find_users(name):
 
     return len(results) > 0
 
-
 def add_friend(user_name, friend_name):
     db = get_db()
     cursor = db.cursor()
@@ -147,7 +146,9 @@ def add_friend(user_name, friend_name):
     user_id = result_one[0]
 
     cursor.execute(sql, (friend_name,))
+    print("friend_name:", friend_name)
     result_two = cursor.fetchone()
+    print(result_two)
     if result_two:
         friend_id = result_two[0]
         sql = "INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)"
@@ -239,7 +240,7 @@ def add_group_member(group_name, new_name):
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "add_group", "status": 0}
+            return {"type": "add_group", "status": 0,"gid":group_id,"group_name":group_name}
     else:
         cursor.close()
         db.close()
@@ -454,43 +455,48 @@ def get_history(user_name, friend_name):
         password="1",
         database="chat"
     )
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
 
+    # 先获取用户ID
     user_id = find(user_name, "users")
     friend_id = find(friend_name, "users")
 
+    # 使用 JOIN 同时获取发送者和接收者信息
     sql = """
-        select * from messages
-        where (send_id=%s and recive_id=%s) or (send_id=%s and recive_id=%s)
-        order by time asc
+        SELECT 
+            m.id,
+            m.send_id,
+            m.recive_id,
+            m.content,
+            m.time,
+            s.username as sender_name,
+            r.username as receiver_name
+        FROM messages m
+        LEFT JOIN users s ON m.send_id = s.id
+        LEFT JOIN users r ON m.recive_id = r.id
+        WHERE (m.send_id = %s AND m.recive_id = %s) 
+           OR (m.send_id = %s AND m.recive_id = %s)
+        ORDER BY m.time ASC
+        LIMIT 30
     """
     cursor.execute(sql, (user_id, friend_id, friend_id, user_id))
     results = cursor.fetchall()
 
     messages = []
     for item in results:
-        send_id = item[1]
-        content = item[3]
-        msg_time = str(item[4])
-
-        sql = "select * from users where id=%s"
-        cursor.execute(sql, (send_id,))
-        result_user = cursor.fetchone()
-
-        if result_user:
-            sender_name = result_user[1]
-        else:
-            sender_name = ""
-
+        sender_name = item[5]
+        reciver_name= item[6]
+        content=item[3]
+        time=item[4]
         messages.append({
-            "sender_uid": sender_name,
-            "sender_nickname": sender_name,
+            "sender_name": sender_name,
+            "reciver_name": reciver_name,
             "content": content,
-            "time": msg_time,
-            "is_self": True if sender_name == user_name else False
+            "time": time,
         })
 
-    db.commit()
+    cursor.close()
+    db.close()
     return messages
 
 
@@ -501,42 +507,48 @@ def get_group_history(group_name):
         password="1",
         database="chat"
     )
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
 
+    # 先获取群组ID
     group_id = find(group_name, "groups_list")
+    
+    if not group_id:
+        cursor.close()
+        db.close()
+        return []
 
+    # 使用 JOIN 获取群消息和发送者信息，限制最新30条
     sql = """
-        select * from group_messages
-        where group_id=%s
-        order by time asc
+        SELECT 
+            gm.group_id,
+            gm.send_id,
+            gm.content,
+            gm.time,
+            u.username as sender_name,
+            u.id as sender_id
+        FROM group_messages gm
+        LEFT JOIN users u ON gm.send_id = u.id
+        WHERE gm.group_id = %s
+        ORDER BY gm.time DESC
+        LIMIT 30
     """
     cursor.execute(sql, (group_id,))
     results = cursor.fetchall()
+    
+    # 由于是按时间倒序取的，需要再反转回正序
+    results.reverse()
 
     messages = []
     for item in results:
-        send_id = item[2]
-        content = item[3]
-        msg_time = str(item[4])
-
-        sql = "select * from users where id=%s"
-        cursor.execute(sql, (send_id,))
-        result_user = cursor.fetchone()
-
-        if result_user:
-            sender_name = result_user[1]
-        else:
-            sender_name = ""
-
         messages.append({
-            "sender_uid": sender_name,
-            "sender_nickname": sender_name,
-            "content": content,
-            "time": msg_time,
-            "is_self": False
+            "group_name": group_name,
+            "sender_name": item[4],
+            "content": item[2],
+            "time": str(item[3]),
         })
 
-    db.commit()
+    cursor.close()
+    db.close()
     return messages
 
 
