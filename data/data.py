@@ -136,7 +136,7 @@ def find_users(name):
 def add_friend(user_name, friend_name):
     db = get_db()
     cursor = db.cursor()
-
+    print('===============user_name为',user_name,'===================')
     sql = "SELECT * FROM users WHERE name=%s"
     cursor.execute(sql, (user_name,))
     result_one = cursor.fetchone()
@@ -368,12 +368,13 @@ def get_friends(name):
     friends = []
     for item in results:
         friend_id = item[0]
-        sql = "select * from users where id=%s"
+        print(name,"friend_id:", friend_id)
+        sql = "select * from users where user_id=%s"
         cursor.execute(sql, (friend_id,))
         result_user = cursor.fetchone()
         if result_user:
             friends.append({
-                "uid": result_user[1],
+                "uid": result_user[0],
                 "nickname": result_user[1]
             })
 
