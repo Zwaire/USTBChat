@@ -10,7 +10,7 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from typing import List
+from typing import List, Dict
 from PySide6.QtWidgets import (QApplication, QLayoutItem, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
                                QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit,
                                QStackedLayout, QMenu)
@@ -34,6 +34,8 @@ class AddFriendPartyWindow(QWidget):
     右键菜单中用以添加好友或群聊的窗口
     '''
 
+    addSuccess = Signal()
+
     def __init__(self, addFriend: bool):
         '''
         Args:
@@ -51,6 +53,7 @@ class AddFriendPartyWindow(QWidget):
 
         self.creWidgets()
         self.applyLayout()
+        self.slotsConnect()
 
     def creWidgets(self):
 
@@ -81,6 +84,46 @@ class AddFriendPartyWindow(QWidget):
         self.mainLayout.addWidget(self.addButton, 0)
 
         self.setLayout(self.mainLayout)
+
+    def slotsConnect(self):
+        self.addButton.clicked.connect(lambda checked: self.buttonClicked())
+
+    @Slot()
+    def buttonClicked(self):
+        '''点击按钮后的操作, 向服务器发送添加请求, 成功则发出信号'''
+
+        # print("WHY")
+
+        # 检查输入是否合法
+        whatUserWrite = self.uidInputer.getInput()
+        if not tool._is_uid(whatUserWrite):
+            QMessageBox.warning(self, "", "输入UID的格式有误")
+            return
+
+        try:
+            response: Dict = CT.request_add_friend(whatUserWrite)
+        except:
+            QMessageBox.warning(self, "", "网络错误")
+            return
+        
+        # 处理服务器消息
+        responseType = response.get('type')
+        if responseType != 'add_friend':
+            QMessageBox.warning(self, "", "服务器返回类型有误")
+            return
+        
+        status = response['status']
+        if status == 3:
+            QMessageBox.warning(self, "", "该用户不存在")
+        elif status == 7:
+            QMessageBox.warning(self, "", "该群聊不存在")
+        elif status == 0:
+            # 添加成功
+            self.addSuccess.emit()
+            QMessageBox.warning(self, "", "添加成功")
+        else:
+            QMessageBox.warning(self, "", "服务器状态错误")
+
 
 class MainWindow(QWidget):
     '''
@@ -746,6 +789,8 @@ class MainWindow(QWidget):
         if response['type'] != 'friend_list':
             return False
         
+        self.friendsBarList.clear()
+
         # 转换为Bar
         # self.friendsBarList = [friendToBar(x) for x in response['friends']]
         for x in response['friends']:
@@ -776,6 +821,8 @@ class MainWindow(QWidget):
         
         # 转换为Bar
         # self.partiesBarList = [partyToBar(x) for x in response['groups']]
+
+        self.partiesBarList.clear()
 
         for x in response['groups']:
             _ = partyToBar(x)
@@ -877,8 +924,6 @@ class MainWindow(QWidget):
         # self.messageDisplayLayout.addStretch(1)
         self.messageDisplayLayout.update()
             
-    # def getHistory
-
     @Slot(dict)
     def process_network_message(self, msg_dict):
         '''
@@ -1021,12 +1066,14 @@ class MainWindow(QWidget):
     def openFriendAddWindow(self):
 
         self.friendAddWindow = AddFriendPartyWindow(True)
+        self.friendAddWindow.addSuccess.connect(lambda: self.getFriendsListFromServer())
         self.friendAddWindow.show()
         return
     
     def openPartyAddWindow(self):
         
         self.partyAddWindow = AddFriendPartyWindow(False)
+        self.partyAddWindow.addSuccess.connect(lambda: self.getGroupsListFromServer())
         self.partyAddWindow.show()
         return
 
