@@ -96,7 +96,7 @@ class AddFriendPartyWindow(QWidget):
 
         # 检查输入是否合法
         whatUserWrite = self.uidInputer.getInput()
-        if not tool._is_uid(whatUserWrite):
+        if not tool._validate_id(whatUserWrite):
             QMessageBox.warning(self, "", "输入UID的格式有误")
             return
 
