@@ -321,14 +321,61 @@ class ChatServer:
                     groupname = msg.get("groupname")
                     res = self.handle_group_atmosphere(groupname)
                     conn.sendall(encode_msg(res))
-
+                #16. 私发文件
+                elif msg_type == "file_message":
+                    sender = msg.get("username")
+                    target = msg.get("friendname") or msg.get("target")
+                    filename = msg.get("filename") or msg.get("file_name") or ""
+                    content = msg.get("content") or msg.get("file_content") or msg.get("text_content") or ""
+                
+                    file_obj = msg.get("file")
+                    if isinstance(file_obj, dict):
+                        if not filename:
+                            filename = file_obj.get("filename") or file_obj.get("file_name") or ""
+                        if not content:
+                            content = file_obj.get("content") or file_obj.get("file_content") or ""
+                
+                    forward_msg = {
+                        "type": "file_message",
+                        "username": sender,
+                        "friendname": target,
+                        "filename": filename,
+                        "content": content,
+                        "time": msg.get("time")
+                    }
+                
+                    self.send_private(target, forward_msg)
+                #17. 群发文件
+                elif msg_type == "group_file_message":
+                    sender = msg.get("username")
+                    groupname = msg.get("groupname") or msg.get("friendname")
+                    filename = msg.get("filename") or msg.get("file_name") or ""
+                    content = msg.get("content") or msg.get("file_content") or msg.get("text_content") or ""
+                
+                    file_obj = msg.get("file")
+                    if isinstance(file_obj, dict):
+                        if not filename:
+                            filename = file_obj.get("filename") or file_obj.get("file_name") or ""
+                        if not content:
+                            content = file_obj.get("content") or file_obj.get("file_content") or ""
+                
+                    forward_msg = {
+                        "type": "group_file_message",
+                        "username": sender,
+                        "groupname": groupname,
+                        "filename": filename,
+                        "content": content,
+                        "time": msg.get("time")
+                    }
+                
+                    self.broadcast(forward_msg)
         except ConnectionResetError:
             pass
         finally:
             if current_user:
                 self.remove_client(current_user)
 
-    #
+    #新增
     def is_ai_trigger(self, text: str) -> bool:
         if not text:
             return False
