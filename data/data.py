@@ -95,6 +95,7 @@ def log_in(name, code, ip):
 
     if user[2] == code:
         user_id_6str = f"{user[0]:06d}"
+        # print(user_id_6str)
         sql = "SELECT * FROM user_sessions WHERE user_id=%s"
         cursor.execute(sql, (user[0],))
         results_two = cursor.fetchall()

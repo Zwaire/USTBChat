@@ -36,7 +36,7 @@ class LoginWindow(QWidget):
     6. 若要登录账户, 登录成功则进入主界面, 否则提示错误
     '''
 
-    iLoveLinux = Signal(Tuple[str, str])
+    iLoveLinux = Signal(str, str)
 
     def __init__(self):
         super().__init__()
@@ -303,6 +303,7 @@ class LoginWindow(QWidget):
             return False
         elif replyStatue == 0:
             # 登录成功, 进入主界面
+            # print("UID: ", serverReply['id'])
             self.iLoveLinux.emit(serverReply['id'], serverReply['name'])
             self.enterMainInterface()
             return True
