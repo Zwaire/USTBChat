@@ -45,6 +45,7 @@ class USTBChatClient:
         if self.login_window:
             self.login_window.close()
         # print("UID: ", uid)
+        ContactTool._nickname, ContactTool._uid = uid, name
         _main_window = MainWindow(uid, name)
         _main_window.show()
 
