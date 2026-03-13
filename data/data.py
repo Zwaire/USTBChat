@@ -568,3 +568,86 @@ def remove_group_member(group_name, user_name):
 
 def leave_group(group_name, user_name):
     return remove_group_member(group_name, user_name)
+
+# 新增
+def get_recent_private_messages(username, friendname, limit=5):
+    db = get_db()
+    cursor = db.cursor()
+
+    user_id = find(username, "users")
+    friend_id = find(friendname, "users")
+
+    if user_id == -1 or friend_id == -1:
+        cursor.close()
+        db.close()
+        return []
+
+    sql = """
+        SELECT send_id, message
+        FROM messages
+        WHERE (send_id=%s AND recive_id=%s)
+           OR (send_id=%s AND recive_id=%s)
+        ORDER BY id DESC
+        LIMIT %s
+    """
+    cursor.execute(sql, (user_id, friend_id, friend_id, user_id, limit))
+    rows = cursor.fetchall()
+
+    rows = list(rows)
+    rows.reverse()
+
+    result = []
+    for send_id, message in rows:
+        cursor.execute("SELECT name FROM users WHERE id=%s", (send_id,))
+        user_row = cursor.fetchone()
+        sender_name = user_row[0] if user_row else str(send_id)
+
+        result.append({
+            "username": sender_name,
+            "message": message
+        })
+
+    cursor.close()
+    db.close()
+    return result
+
+
+def get_recent_group_messages(groupname, limit=5):
+    db = get_db()
+    cursor = db.cursor()
+
+    group_id = find(groupname, "groups_list")
+    if group_id == -1:
+        cursor.close()
+        db.close()
+        return []
+
+    sql = """
+        SELECT send_id, message
+        FROM group_messages
+        WHERE group_id=%s
+        ORDER BY id DESC
+        LIMIT %s
+    """
+    cursor.execute(sql, (group_id, limit))
+    rows = cursor.fetchall()
+
+    rows = list(rows)
+    rows.reverse()
+
+    result = []
+    for send_id, message in rows:
+        cursor.execute("SELECT name FROM users WHERE id=%s", (send_id,))
+        user_row = cursor.fetchone()
+        sender_name = user_row[0] if user_row else str(send_id)
+
+        result.append({
+            "username": sender_name,
+            "message": message
+        })
+
+    cursor.close()
+    db.close()
+    return result
+
+
