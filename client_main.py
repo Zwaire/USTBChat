@@ -28,7 +28,7 @@ class USTBChatClient:
         self.signals = NetworkSignals()
         self.signals.msg_received.connect(self.handle_server_response)
         self.chat_client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg))
-        is_connected = self.chat_client.connect("192.168.43.238", 8888)
+        is_connected = self.chat_client.connect("127.0.0.1", 8888)
         if not is_connected:
             print("NetworkError")
         else:
