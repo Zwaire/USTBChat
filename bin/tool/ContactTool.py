@@ -29,6 +29,7 @@ def on_login(client, uid: str, nickname: str,
     _contacts.clear()
     _chat_history.clear()
 
+    # _client.callback = on_message_received
     # for f in friends:
     #     _friends[f["uid"]] = Friend(f["uid"], f["nickname"])
     #     _contacts.append(Contact(id=f["uid"], name=f["nickname"], is_group=False))
@@ -202,24 +203,25 @@ def send_message(target_id: str, content: str, is_group: bool = False) -> bool:
         _append_to_cache(target_id, msg)
     return ok
 
-def on_message_received(msg_dict: dict):
-    """
-    网络层收到推送消息时调用（由 client.callback 触发）。
-    msg_dict 格式: {"type":"message","username":"...","message":"...","time":"..."}
-    """
-    msg_type = msg_dict.get("type")
-    if msg_type not in ("message", "group_message"):
-        return
+# def on_message_received(msg_dict: dict):
+#     """
+#     网络层收到推送消息时调用（由 client.callback 触发）。
+#     msg_dict 格式: {"type":"message","username":"...","message":"...","time":"..."}
+#     """
+#     msg_type = msg_dict.get("type")
+#     if msg_type not in ("message", "group_message"):
+#         return
 
-    target_id = msg_dict.get("username", "")
-    msg = Message(
-        sender_uid=target_id,
-        sender_nickname=target_id,
-        content=msg_dict.get("message", ""),
-        time=msg_dict.get("time", ""),
-        is_self=False,
-    )
-    _append_to_cache(target_id, msg)
+#     target_id = msg_dict.get("username", "")
+#     msg = Message(
+#         sender_uid=target_id,
+#         sender_nickname=target_id,
+#         content=msg_dict.get("message", ""),
+#         time=msg_dict.get("time", ""),
+#         is_self=False,
+#     )
+    
+#     _append_to_cache(target_id, msg)
 
 # ── 内部工具 ──────────────────────────────────────────────────
 
