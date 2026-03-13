@@ -419,6 +419,7 @@ class MainWindow(QWidget):
 
             self.Type = type
             self.UID = UID
+            self.Name = ID
             self.isRead = isRead
             self.hasRead = hasRead      # 登录之后是否点击过
             self.initUI()
@@ -574,6 +575,7 @@ class MainWindow(QWidget):
             super().__init__()
 
             self.UID = UID
+            self.Name = ID
 
             self.initUI()
             self.setStyleSheet("border: 2px solid blue;")
@@ -694,6 +696,46 @@ class MainWindow(QWidget):
         def modifyChatContent(self, content: str):
             self.chatContent.setPlainText(content)
 
+    class PartyMemberBar(QWidget):
+
+        def __init__(
+                self,
+                name: str,
+                uid: str
+        ):
+            
+            self.Name = name
+            self.UID = uid
+
+            self.initUI()
+        
+        def initUI(self):
+
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self.setFixedSize(200, 40)
+
+            self.creWidgets()
+            self.applyLayout()
+        
+        def creWidgets(self):
+
+            self.memberName = QLabel()
+            self.memberName.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            self.memberName.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+            self.memberName.setFixedHeight(40)
+        
+        def applyLayout(self):
+
+            self.mainLayout = ClassicLayout.Vertical(
+                ClassicLayout.CLeft,
+                ClassicLayout.MinMax,
+                ClassicLayout.NoBorder,
+                0
+            )
+
+            self.mainLayout.addWidget(self.memberName, 1)
+            self.setLayout(self.mainLayout)
+
     def __init__(
             self,
             uid: str,
@@ -713,6 +755,7 @@ class MainWindow(QWidget):
         self.partiesBarList = []
 
         self.cachedChatHistory = dict()
+        self.cachedPartyMembers = dict()
 
         self.friendAddWindow = None
         self.partyAddWindow = None
@@ -927,13 +970,25 @@ class MainWindow(QWidget):
 
         # 群成员显示区域
         self.partyMemberSection = Section((200, 550), Section.Fixed)
+        self.partyMemberLayout = ClassicLayout.Vertical(
+            ClassicLayout.LTop,
+            ClassicLayout.MinMax,
+            ClassicLayout.NoBorder,
+            0
+        )
+        self.partyMemberSection.setLayout(self.partyMemberLayout)
+
+        self.scrollableMemberLayout = QScrollArea()
+        self.scrollableMemberLayout.setWidgetResizable(True)
+        self.scrollableMemberLayout.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scrollableMemberLayout.setWidget(self.partyMemberSection)
 
         # 右边栏区域
         self.rightSideBarSection = Section((200, 618), Section.VExtendable)
         self.rightSideBarLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, ClassicLayout.NoBorder, 0)
         self.rightSideBarLayout.addWidget(self.partyInfoSection, 0)
         self.rightSideBarLayout.addWidget(Separator(width=1))
-        self.rightSideBarLayout.addWidget(self.partyMemberSection, 0)
+        self.rightSideBarLayout.addWidget(self.scrollableMemberLayout, 1)
         self.rightSideBarSection.setLayout(self.rightSideBarLayout)
     
     def slotsConnect(self):
@@ -1024,7 +1079,7 @@ class MainWindow(QWidget):
             )
 
             _ = contactToBar(aContact)
-            _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = _.Type: self.showSpecificChatArea(uid, isGroup))
+            _.hasBeenClicked.connect(lambda uid = _.UID, name = _.Name, isGroup = _.Type: self.showSpecificChatArea(uid, name, isGroup))
             self.newsContactBarList.append(_)
         # self.newsContactBarList[0].printInfo()
 
@@ -1064,7 +1119,7 @@ class MainWindow(QWidget):
             )
 
             _ = friendToBar(aFriend)
-            _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = False: self.showSpecificChatArea(uid, isGroup))
+            _.hasBeenClicked.connect(lambda uid = _.UID, name = _.Name, isGroup = False: self.showSpecificChatArea(uid, name, isGroup))
             self.friendsBarList.append(_)
 
         for i in range(len(self.friendsBarList)):
@@ -1104,7 +1159,7 @@ class MainWindow(QWidget):
             )
 
             _ = partyToBar(aGroup)
-            _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = True: self.showSpecificChatArea(uid, isGroup))
+            _.hasBeenClicked.connect(lambda uid = _.UID, name = _.Name, isGroup = True: self.showSpecificChatArea(uid, name, isGroup))
             self.partiesBarList.append(_)
 
         for i in range(len(self.partiesBarList)):
@@ -1175,7 +1230,7 @@ class MainWindow(QWidget):
         return True
 
     @Slot(str)
-    def showSpecificChatArea(self, UID: str, isGroup: bool):
+    def showSpecificChatArea(self, UID: str, Name: str, isGroup: bool):
 
         # import bin.tool.ContactTool as CTool
 
@@ -1196,6 +1251,34 @@ class MainWindow(QWidget):
         # 缓存中不存在该UID, 则向服务器请求获取聊天记录
         if not (UID in self.cachedChatHistory.keys()):
             self.cachedChatHistory.update({UID: CT.fetch_history(UID)})
+
+        # 若是群聊, 且缓存中未保存群成员, 则向服务器申请
+        if isGroup and not (UID in self.cachedPartyMembers.keys()):
+            
+            try:
+                serverResponse = CT.request_group_members(Name)
+            except:
+                QMessageBox.warning(self, "", "无法向服务器获取到群成员信息")
+                return
+            
+            newDict = {
+                UID: serverResponse['members']
+            }
+            self.cachedPartyMembers.update(newDict)
+        
+        # 若是群聊, 则刷新显示群成员以及群名称UID等等
+        if isGroup:
+            self.partyName.setText(Name)
+            self.partyUID.setText("PUID: " + UID)
+            groupMembers = self.cachedPartyMembers[UID]
+            for i in range(len(groupMembers)):
+                # 将字典信息转为群成员组件
+                _ = self.PartyMemberBar(
+                    groupMembers[i]['nickname'],
+                    groupMembers[i]['uid']
+                )
+
+                self.partyMemberLayout.addWidget(_)
 
         # 向缓存中读取聊天记录
         chatUpcoming = self.cachedChatHistory[UID]
