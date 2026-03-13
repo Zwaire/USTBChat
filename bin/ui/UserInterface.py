@@ -1070,6 +1070,8 @@ class MainWindow(QWidget):
         for i in range(len(self.friendsBarList)):
             self.friendsListLayout.insertWidget(self.friendsListLayout.count() - 1, self.friendsBarList[i])
 
+        self.friendsListLayout.update()
+
         return True
 
     def getGroupsListFromServer(self) -> bool:
@@ -1098,7 +1100,7 @@ class MainWindow(QWidget):
             aGroup = Group(
                 x['gid'],
                 x['name'],
-                None
+                []
             )
 
             _ = partyToBar(aGroup)
@@ -1107,6 +1109,8 @@ class MainWindow(QWidget):
 
         for i in range(len(self.partiesBarList)):
             self.partiesListLayout.insertWidget(self.partiesListLayout.count() - 1, self.partiesBarList[i])
+
+        self.partiesListLayout.update()
 
         return True
 
