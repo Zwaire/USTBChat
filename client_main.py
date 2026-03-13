@@ -10,6 +10,7 @@ from bin.ui.Login import LoginWindow
 from bin.ui.UserInterface import MainWindow
 from core.network_client import ChatClient
 import bin.tool.ContactTool as ContactTool
+from bin.ui.Themes import Theme
 
 class NetworkSignals(QObject):
     msg_received = Signal(dict)
@@ -27,7 +28,7 @@ class USTBChatClient:
         self.signals = NetworkSignals()
         self.signals.msg_received.connect(self.handle_server_response)
         self.chat_client = ChatClient(callback=lambda msg: self.signals.msg_received.emit(msg))
-        is_connected = self.chat_client.connect("127.0.0.1", 8888)
+        is_connected = self.chat_client.connect("172.28.228.87", 8888)
         if not is_connected:
             print("NetworkError")
         else:
@@ -77,6 +78,7 @@ class USTBChatClient:
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    # app.setStyleSheet(Theme.Dark)
     client = USTBChatClient(app)
     # 启动客户端
     client.start()

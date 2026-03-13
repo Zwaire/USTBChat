@@ -302,6 +302,9 @@ class LoginWindow(QWidget):
             # 登录成功, 进入主界面
             self.enterMainInterface()
             return True
+        elif replyStatue == 8:
+            self.warning("该用户不存在")
+            return False
         else:
             self.warning("服务器返回状态码错误")
             return False

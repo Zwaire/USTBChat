@@ -144,7 +144,7 @@ class ChatServer:
                     username=msg.get("username")
                     res=db.request_pwd_find(username)
                     if res.get("status")==0:
-                        parts = msg.get("code").split('$', 1)  # split(分隔符, 最大拆分次数)
+                        parts = msg.get("code").split('$', 1)  # split(分隔符, 最大拆分次数) #type: ignore
                         if len(parts) == 2:
                             salt_hex = parts[0]  # 第一部分：盐值的十六进制字符串
                             dk_hex = parts[1]    # 第二部分：派生密钥的十六进制字符串
@@ -281,7 +281,7 @@ class ChatServer:
                     }))
 
                 # 14. 获取历史记录
-                elif msg_type == "fetch_history":
+                elif msg_type == "get_history":
                     username = msg.get("username")
 
                     messages = []

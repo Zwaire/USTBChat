@@ -422,7 +422,7 @@ class MainWindow(QWidget):
             self.isRead = isRead
             self.hasRead = hasRead      # 登录之后是否点击过
             self.initUI()
-            self.setStyleSheet("border: 2px solid blue;")
+            self.setStyleSheet("ContactBar { border: 2px solid blue; }")
             self.modifyID(ID)
             self.modifyLastTime(lastTime)
             self.modifyLastChat(lastChat)

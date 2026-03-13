@@ -105,29 +105,29 @@ def request_contacts_list() -> dict:
     """
     请求会话列表。 服务器应返回{ "type":"contacts_list","contacts":[...] # Contact 列表}
     """
-    return dict(
-        type="contacts_list",
-        contacts=[Contact(id="1231", name="JohnDoe", is_group=False) ] +
-                [Contact(id="g123", name="StudyGroup", is_group=True)]
-    )
-    # return _get_response({"type": "get_contacts_list", "username": _uid})
+    # return dict(
+    #     type="contacts_list",
+    #     contacts=[Contact(id="1231", name="JohnDoe", is_group=False) ] +
+    #             [Contact(id="g123", name="StudyGroup", is_group=True)]
+    # )
+    return _get_response({"type": "get_contacts_list", "username": _uid})
 
 def request_friend_list() -> dict:
     """请求好友列表。服务器应返回 {"type":"friend_list","friends":[...] # Friend 列表}"""
-    return dict(
-        type="friend_list",
-        friends=[Friend(uid="10001", nickname="Alice")] +
-                [Friend(uid="10002", nickname="Bob")]
-    )
-    # return _get_response({"type": "get_friend_list", "username": _uid})
+    # return dict(
+    #     type="friend_list",
+    #     friends=[Friend(uid="10001", nickname="Alice")] +
+    #             [Friend(uid="10002", nickname="Bob")]
+    # )
+    return _get_response({"type": "get_friend_list", "username": _uid})
 
 def request_group_list() -> dict:
     """请求群组列表。服务器应返回 {"type":"group_list","groups":[...]  # Group 列表}"""
-    return dict(
-        type="group_list",
-        groups=[Group(gid="g123", name="Study Group")]
-    )
-    # return _get_response({"type": "get_group_list", "username": _uid})
+    # return dict(
+    #     type="group_list",
+    #     groups=[Group(gid="g123", name="Study Group")]
+    # )
+    return _get_response({"type": "get_group_list", "username": _uid})
 
 def request_add_friend(target_uid: str) -> dict:
     """发送加好友请求。服务器应返回 {"type":"add_friend","status":0 }"""
@@ -174,16 +174,16 @@ def fetch_history(target_id: str) -> list[Message]:
     每条消息格式: {"sender_uid","sender_nickname","content","time","is_self"}
     """
     # 模拟数据
-    return [
-        Message(sender_uid="10002", sender_nickname="Bob", content="Hello!", time="2025-03-12 14:30:00", is_self=False),
-        Message(sender_uid="10003", sender_nickname="Charlie", content="Hi Bob!", time="2025-03-12 14:31:00", is_self=True)
-    ]
+    # return [
+    #     Message(sender_uid="10002", sender_nickname="Bob", content="Hello!", time="2025-03-12 14:30:00", is_self=False),
+    #     Message(sender_uid="10003", sender_nickname="Charlie", content="Hi Bob!", time="2025-03-12 14:31:00", is_self=True)
+    # ]
 
-    # resp = _get_response({"type": "get_history", "target_id": target_id})
-    # msgs = [_dict_to_message(d) for d in resp.get("messages", [])]
-    # _chat_history[target_id] = msgs
-    # _clear_unread(target_id)
-    # return msgs
+    resp = _get_response({"type": "get_history", "username": target_id})
+    msgs = [_dict_to_message(d) for d in resp.get("messages", [])]
+    _chat_history[target_id] = msgs
+    _clear_unread(target_id)
+    return msgs
 
 def send_message(target_id: str, content: str, is_group: bool = False) -> bool:
     """
@@ -200,16 +200,16 @@ def send_message(target_id: str, content: str, is_group: bool = False) -> bool:
         "message":    content,
     }
     ok = _client.send_data(packet)
-    if ok:
-        from datetime import datetime
-        msg = Message(
-            sender_uid=_uid,
-            sender_nickname=_nickname,
-            content=content,
-            time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            is_self=True,
-        )
-        _append_to_cache(target_id, msg)
+    # if ok:
+    #     from datetime import datetime
+    #     msg = Message(
+    #         sender_uid=_uid,
+    #         sender_nickname=_nickname,
+    #         content=content,
+    #         time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    #         is_self=True,
+    #     )
+    #     _append_to_cache(target_id, msg)
     return ok
 
 # def on_message_received(msg_dict: dict):
