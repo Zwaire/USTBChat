@@ -180,7 +180,6 @@ class ChatServer:
                 # 5. 添加好友
                 elif msg_type == "add_friend":
                     res = db.add_friend(msg.get("username"), msg.get("friendname"))
-                    # [TODO] 和文档的返回密码对不上
                     conn.sendall(encode_msg(res))
 
                 # 6. 私聊消息
@@ -219,7 +218,7 @@ class ChatServer:
                         username = current_user
                     res = db.get_friends(username)
                     res = self.normalize_friend_list(res)
-                    print('=====测试有没有进入=====================')
+                    # print('=====测试有没有进入=====================')
                     conn.sendall(encode_msg({
                         "type": "friend_list",
                         "friends": res
@@ -259,6 +258,13 @@ class ChatServer:
                         username = current_user
                     groupname = msg.get("groupname")
                     res = db.create_group(groupname, username)
+
+                    if res.get("status") == 0:
+                        uids = msg.get("uids", [])
+                        for uid in uids:
+                            member_name = db.get_username_by_uid(uid)
+                            if member_name and member_name != username:
+                                db.add_group_member(groupname, member_name)
 
                     conn.sendall(encode_msg(res))
 

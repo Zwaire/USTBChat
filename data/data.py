@@ -133,6 +133,15 @@ def find_users(name):
 
     return len(results) > 0
 
+def get_username_by_uid(uid):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT name FROM users WHERE id=%s", (uid,))
+    row = cursor.fetchone()
+    cursor.close()
+    db.close()
+    return row[0] if row else None
+
 def add_friend(user_name, friend_name):
     db = get_db()
     cursor = db.cursor()
@@ -175,6 +184,7 @@ def create_group(group_name, owner_name):
     results = cursor.fetchall()
 
     if len(results) == 0:
+        print("创建群组:", group_name, "，群主:", owner_name)
         sql = "INSERT INTO groups_list (name) VALUES (%s)"
         cursor.execute(sql, (group_name,))
 
@@ -194,7 +204,7 @@ def create_group(group_name, owner_name):
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "create_group", "status": 0}
+            return {"type": "create_group", "status": 0, "gid": f"{group_id:06d}"}
         else:
             db.commit()
             cursor.close()
@@ -242,7 +252,7 @@ def add_group_member(group_name, new_name):
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "add_group", "status": 0,"gid":group_id,"group_name":group_name}
+            return {"type": "add_group", "status": 0,"gid":f"{group_id:06d}","group_name":group_name}
     else:
         cursor.close()
         db.close()
@@ -355,7 +365,6 @@ def find_group_ip(name):
         db.close()
         return None
     
-# [TODO] 下面的函数风格需要对应上，基本功能目前差不多
 def get_friends(name):
     db = get_db()
     cursor = db.cursor()
@@ -368,8 +377,10 @@ def get_friends(name):
     friends = []
     for item in results:
         friend_id = item[0]
-        print(name,"friend_id:", friend_id)
-        sql = "select * from users where user_id=%s"
+        # print(name,"------------friend_id:", friend_id)
+        sql = "select * from users where id=%s"
+        # print("执行的SQL:", sql)
+        # print("参数:", (friend_id,))
         cursor.execute(sql, (friend_id,))
         result_user = cursor.fetchone()
         if result_user:
@@ -383,19 +394,12 @@ def get_friends(name):
 
 
 def get_group_list(name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor()
-
     user_id = find(name, "users")
     sql = "select group_id from groups_member where user_id=%s"
     cursor.execute(sql, (user_id,))
     results = cursor.fetchall()
-
     groups = []
     for item in results:
         group_id = item[0]
@@ -404,10 +408,9 @@ def get_group_list(name):
         result_group = cursor.fetchone()
         if result_group:
             groups.append({
-                "gid": result_group[1],
+                "gid": f"{group_id:06d}",
                 "name": result_group[1]
             })
-
     db.commit()
     return groups
 
@@ -417,12 +420,7 @@ def get_groups(name):
 
 
 def get_group_members(group_name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor()
 
     sql = "select * from groups_list where name=%s"
@@ -452,12 +450,7 @@ def get_group_members(group_name):
 
 
 def get_history(user_name, friend_name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor(dictionary=True)
 
     # 先获取用户ID
@@ -504,12 +497,7 @@ def get_history(user_name, friend_name):
 
 
 def get_group_history(group_name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor(dictionary=True)
 
     # 先获取群组ID
@@ -556,12 +544,7 @@ def get_group_history(group_name):
 
 
 def remove_group_member(group_name, user_name):
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1",
-        database="chat"
-    )
+    db = get_db()
     cursor = db.cursor()
 
     sql = "select * from groups_list where name=%s"
