@@ -152,9 +152,18 @@ def request_group_members(gid: str) -> dict:
     """
     return _get_response({"type": "get_group_members", "username": _uid, "gid": gid})
 
-def request_create_group(group_name: str) -> dict:
-    """发送建群请求。服务器应返回 {"type":"create_group","status":0,"gid":"..."}"""
-    return _get_response({"type": "create_group", "username": _uid, "group_name": group_name})
+def request_create_group(group_name: str, uids: list[str]) -> dict:
+    """
+    发送建群请求。
+    服务器应返回 {"type":"create_group","status":0,"gid":"..."}
+    :param group_name: 群聊名称
+    :param uids: 要加入群聊的用户uid列表，元素为str格式
+    """
+    if not group_name or not group_name.strip():
+        return {"type": "create_group", "status": -1, "msg": "群名不能为空"}
+    if not uids or not all(isinstance(uid, str) and uid.strip() for uid in uids):
+        return {"type": "create_group", "status": -1, "msg": "uid列表不能为空，且所有uid必须为非空字符串"}
+    return _get_response({"type": "create_group", "username": _uid, "group_name": group_name, "uids": uids})
 
 # ── 消息操作 ──────────────────────────────────────────────────
 
