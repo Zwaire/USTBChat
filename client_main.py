@@ -81,7 +81,7 @@ class USTBChatClient:
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # app.setStyleSheet(Theme.Dark)
+    app.setStyleSheet(Theme.Normal)
     client = USTBChatClient(app)
     # 启动客户端
     client.start()
