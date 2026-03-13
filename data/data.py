@@ -441,13 +441,14 @@ def get_group_members(group_name):
             result_user = cursor.fetchone()
             if result_user:
                 members.append({
-                    "uid": result_user[1],
+                    "uid": f"{result_user[0]:06d}",
                     "nickname": result_user[1]
                 })
 
     db.commit()
+    cursor.close()  
+    db.close()     
     return members
-
 
 def get_history(user_name, friend_name):
     db = get_db()
