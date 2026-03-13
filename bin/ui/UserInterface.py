@@ -766,16 +766,16 @@ class MainWindow(QWidget):
         self.personalUID.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
 
         # 消息列表切换按钮栏
-        self.switchButtonSection = Section((200, 20))
-        self.newsButton = Button("N", "最新消息", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
-        self.friendsButton = Button("F", "好友", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
-        self.partiesButton = Button("P", "群聊", (20, 20), Fonts.sizedFont(Fonts.UniversalPlainFont, 8))
+        self.switchButtonSection = Section((200, 40))
+        self.newsButton = Button("N", "最新消息", (40, 40), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+        self.friendsButton = Button("F", "好友", (40, 40), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
+        self.partiesButton = Button("P", "群聊", (40, 40), Fonts.sizedFont(Fonts.UniversalPlainFont, 12))
 
         # 消息列表区域
-        self.messageListSection = Section((200, 538), Section.VExtendable)
-        self.newsListSection = Section((200, 538), Section.VExtendable)
-        self.friendsListSection = Section((200, 538), Section.VExtendable)
-        self.partiesListSection = Section((200, 538), Section.VExtendable)
+        self.messageListSection = Section((200, 518), Section.VExtendable)
+        self.newsListSection = Section((200, 518), Section.VExtendable)
+        self.friendsListSection = Section((200, 518), Section.VExtendable)
+        self.partiesListSection = Section((200, 518), Section.VExtendable)
         # 从本地读取已经存在的消息列表
         # <————————————————————————————————>
         # [NTC]
@@ -1174,7 +1174,8 @@ class MainWindow(QWidget):
 
         # import bin.tool.ContactTool as CTool
 
-        # print("I am clicked")
+        print("I am clicked")
+        print("CurrentChatID: ", self.CurrentChatID)
         self.CurrentChatID = UID
         self.isCurrentChatGroup = isGroup
 

@@ -120,3 +120,13 @@ class Theme:
         }
     '''
 
+    Normal = '''
+
+    Button:hover {
+        background-color: #888888;
+        border: 1px solid #007acc;
+    }
+
+
+
+'''
