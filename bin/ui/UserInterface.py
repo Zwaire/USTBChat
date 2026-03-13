@@ -694,12 +694,14 @@ class MainWindow(QWidget):
         def modifyChatContent(self, content: str):
             self.chatContent.setPlainText(content)
 
-    def __init__(self):
+    def __init__(
+            self,
+            uid: str,
+            name: str
+    ):
         super().__init__()
 
-        
-
-        self.UserID = "123456"
+        self.UserID = uid
         self.CurrentChatID = None
         self.isCurrentChatGroup = False
 
@@ -718,6 +720,9 @@ class MainWindow(QWidget):
 
         # 分三个部分初始化界面
         self.initUI()
+
+        self.modifyID('myUID', uid)
+        self.modifyID('myName', name)
 
     def initUI(self):
 
@@ -937,6 +942,25 @@ class MainWindow(QWidget):
         self.newsButton.clicked.connect(lambda checked: self.displayNewsContactBar())
         self.friendsButton.clicked.connect(lambda checked: self.displayFriendsBar())
         self.partiesButton.clicked.connect(lambda checked: self.displayPartiesBar())
+
+    def modifyID(self, type: str, value: str):
+        '''
+        非用户输入, 因此可以不检测值是否合法
+
+        Args:
+            type(str): myUID, myName, groupUID, groupName
+        '''
+
+        if type == 'myUID':
+            self.personalUID.setText(value)
+        elif type == 'myName':
+            self.personalID.setText(value)
+        elif type == 'groupUID':
+            self.partyUID.setText(value)
+        elif type == 'groupName':
+            self.partyName.setText(value)
+        else:
+            raise ValueError("不存在的类型")
 
     @Slot()
     def displayNewsContactBar(self):
