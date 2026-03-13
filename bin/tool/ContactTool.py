@@ -96,7 +96,6 @@ def _get_response(request: dict, timeout: float = 5.0) -> dict:
     finally:
         if _client and _client.callback == _temp_callback:
             _client.callback = original_callback
-    print(333333333)
     return response_holder
 
 # ── 服务端请求接口 ────────────────────────────────────────────

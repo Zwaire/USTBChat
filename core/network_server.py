@@ -166,24 +166,14 @@ class ChatServer:
                         # conn.sendall(encode_msg({"type": "login", "status": True}))
                         # 返回 uid, nickname, friends, groups。
                         # 注：目前 data.py 没有提供 get_friends 等接口，暂时传入空列表以保证客户端 AppState 能够正确完成初始化。未来数据库支持后在此替换即可。
-                        conn.sendall(encode_msg({
-                            "type": "login", 
-                            "status": True,
-                            "uid": current_user,
-                            "nickname": current_user
-                        }))
+                        conn.sendall(encode_msg(res))
                     else:
-                        # [TODO] 和文档的返回密码对不上
-                        conn.sendall(encode_msg({"type": "login", "status": False, "warnings": "Password error or user not found"}))
+                        conn.sendall(encode_msg(res))
 
                 # 5. 添加好友
                 elif msg_type == "add_friend":
                     res = db.add_friend(msg.get("username"), msg.get("friendname"))
-                    # [TODO] 和文档的返回密码对不上
-                    conn.sendall(encode_msg({
-                        "type": "add_friend",
-                        "status": True if res.get("statuts") == 0 else False
-                    }))
+                    conn.sendall(encode_msg(res))
 
                 # 6. 私聊消息
                 elif msg_type == "message":
