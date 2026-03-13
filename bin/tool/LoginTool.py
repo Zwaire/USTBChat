@@ -4,7 +4,6 @@ import hashlib
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from bin.MessageFormat import LoginInfo
-import core.protocol as protocol
 import bin.tool.ContactTool as contact_tool
 
 
@@ -89,7 +88,6 @@ class LoginWindowTool:
                 salt + PEPPER.encode('utf-8'),
                 100_000
         )
-        print(dk.hex())
         return salt.hex() + '$' + dk.hex()
     
     @classmethod
@@ -156,6 +154,18 @@ class LoginWindowTool:
             ip = LoginInfo._get_localip()
         )
         response_for_seed = contact_tool._get_response(request_for_seed)
+        if not response_for_seed:
+            return {
+                "error": "no response from server"
+            }
+        if response_for_seed.get("type") != "seed":
+            return {
+                "error": "invalid seed response"
+            }
+        if response_for_seed.get("status") != 0:
+            return {
+                "error": "user not found"
+            }
         # 返回的格式应该是 dict{"type":"seed", "seed":"salt"}
         PEPPER = os.environ.get("USTBCHAT_PWD_PEPPER", "USTBChat_Default_Pepper_ChangeMe")
         salt_hex = response_for_seed.get("seed", "")

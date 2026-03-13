@@ -121,12 +121,96 @@ class Theme:
     '''
 
     Normal = '''
+        QWidget {
+            background-color: #f4f7fb;
+            color: #1f2937;
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+            font-size: 14px;
+        }
 
-    Button:hover {
-        background-color: #888888;
-        border: 1px solid #007acc;
-    }
+        QLabel {
+            background-color: transparent;
+            color: #1f2937;
+        }
 
+        QPushButton {
+            background-color: #2f80ed;
+            color: #ffffff;
+            border: 1px solid #2f80ed;
+            border-radius: 8px;
+            padding: 5px 10px;
+        }
+        QPushButton:hover {
+            background-color: #256fd1;
+            border-color: #256fd1;
+        }
+        QPushButton:pressed {
+            background-color: #1f5fb3;
+            border-color: #1f5fb3;
+        }
 
+        QLineEdit, QPlainTextEdit, QTextEdit {
+            background-color: #ffffff;
+            color: #1f2937;
+            border: 1px solid #d5deea;
+            border-radius: 8px;
+            padding: 6px 8px;
+            selection-background-color: #dbeafe;
+            selection-color: #1f2937;
+        }
+        QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus {
+            border: 1px solid #2f80ed;
+        }
 
-'''
+        QMenu {
+            background-color: #ffffff;
+            border: 1px solid #d5deea;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        QMenu::item {
+            padding: 6px 16px;
+            border-radius: 6px;
+        }
+        QMenu::item:selected {
+            background-color: #eef4ff;
+        }
+
+        QScrollArea {
+            border: none;
+            background-color: transparent;
+        }
+        QScrollBar:vertical {
+            width: 8px;
+            background: transparent;
+        }
+        QScrollBar::handle:vertical {
+            border-radius: 4px;
+            background: #cad7e6;
+            min-height: 20px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: #9fb2c8;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0px;
+        }
+        QScrollBar:horizontal {
+            height: 8px;
+            background: transparent;
+        }
+        QScrollBar::handle:horizontal {
+            border-radius: 4px;
+            background: #cad7e6;
+            min-width: 20px;
+        }
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+            width: 0px;
+        }
+
+        QWidget#FriendBar {
+            border: 1px solid #c9d9ef;
+            border-radius: 8px;
+            background-color: #ffffff;
+        }
+    '''

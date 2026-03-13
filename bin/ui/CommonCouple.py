@@ -89,6 +89,7 @@ class TextInput(QHBoxLayout):
         # 定义获取输入值的函数
         self.getInput = lambda: qInput.text()
         self.clearInput = lambda: qInput.clear()
+        self.setInput = lambda text: qInput.setText(str(text))
 
         # 设置布局属性
         self.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
@@ -289,4 +290,3 @@ class Separator(QFrame):
         
         else:
             raise ValueError("超出预期的方向")
-

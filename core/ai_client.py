@@ -16,6 +16,20 @@ class AIServiceClient:
                 "error": f"AI服务请求失败: {str(e)}"
             }
 
+    def health(self) -> dict:
+        url = f"{self.base_url}/health"
+        try:
+            resp = requests.get(url, timeout=5)
+            data = resp.json()
+            if isinstance(data, dict) and data.get("status") == 0:
+                return {"status": 0}
+            return {"status": 1, "error": "AI服务健康检查失败"}
+        except Exception as e:
+            return {
+                "status": 1,
+                "error": f"AI服务不可达: {str(e)}"
+            }
+
     def reply_private(self, username, friendname, message, recent_messages):
         payload = {
             "type": "ai_reply",

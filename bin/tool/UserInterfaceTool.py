@@ -52,13 +52,13 @@ class UserInterfaceTool:
 
 
     @classmethod
-    def open_chat(cls, target_id: str) -> list[Message]:
+    def open_chat(cls, target_id: str, is_group: bool | None = None) -> list[Message]:
         """
         打开某个会话：若内存中无历史则向服务器拉取，清除未读计数，返回消息列表。
         """
-        history = ct.get_history(target_id)
+        history = ct.get_history(target_id, is_group)
         if not history:
-            history = ct.fetch_history(target_id)
+            history = ct.fetch_history(target_id, is_group)
         else:
-            ct._clear_unread(target_id)
+            ct._clear_unread(target_id, is_group)
         return history

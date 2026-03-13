@@ -1,264 +1,284 @@
 # -*- coding: utf-8 -*-
-import os, sys, threading
+import os
+import sys
+import threading
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from bin.state.ChatModels import Contact, Friend, Group, Message
 
-# ── 运行时状态 ────────────────────────────────────────────────
-_client       = None          # ChatClient 实例
-_uid: str     = ""
-_nickname: str = ""
-_friends:  dict[str, Friend]        = {}
-_groups:   dict[str, Group]         = {}
-_contacts: list[Contact]            = []
-_chat_history: dict[str, list[Message]] = {}  # target_id -> 消息列表
 
-# ── 状态访问 ──────────────────────────────────────────────────
-def on_login(client, uid: str, nickname: str,
-            friends: list[dict], groups: list[dict]):
-    """
-    登录成功后调用，初始化所有运行时状态。
-    friends 格式: [{"uid": "10002", "nickname": "xjz"}, ...]
-    groups  格式: [{"gid": "1",     "name": "group_1"}, ...]
-    """
+_client = None
+_uid: str = ""
+_nickname: str = ""
+_friends: dict[str, Friend] = {}
+_groups: dict[str, Group] = {}
+_contacts: list[Contact] = []
+_chat_history: dict[str, list[Message]] = {}
+
+
+def _history_key(target_id: str, is_group: bool | None = None) -> str:
+    target_id = str(target_id or "")
+    if is_group is None:
+        return target_id
+    return f"{'g' if is_group else 'u'}:{target_id}"
+
+
+def on_login(client, uid: str, nickname: str, friends: list[dict], groups: list[dict]):
     global _client, _uid, _nickname
-    _client   = client
-    _uid      = uid
-    _nickname = nickname
+    _client = client
+    _uid = str(uid or "")
+    _nickname = str(nickname or "")
+
     _friends.clear()
     _groups.clear()
     _contacts.clear()
     _chat_history.clear()
 
-    # _client.callback = on_message_received
-    # for f in friends:
-    #     _friends[f["uid"]] = Friend(f["uid"], f["nickname"])
-    #     _contacts.append(Contact(id=f["uid"], name=f["nickname"], is_group=False))
+    for f in friends or []:
+        friend = Friend(uid=str(f.get("uid", "")), nickname=str(f.get("nickname", "")))
+        _friends[friend.uid] = friend
+        _contacts.append(Contact(id=friend.uid, name=friend.nickname, is_group=False))
 
-    # for g in groups:
-    #     _groups[g["gid"]] = Group(g["gid"], g["name"])
-    #     _contacts.append(Contact(id=g["gid"], name=g["name"], is_group=True))
+    for g in groups or []:
+        group = Group(gid=str(g.get("gid", "")), name=str(g.get("name", "")))
+        _groups[group.gid] = group
+        _contacts.append(Contact(id=group.gid, name=group.name, is_group=True))
+
 
 def get_client():
     return _client
 
+
 def get_uid() -> str:
     return _uid
+
 
 def get_nickname() -> str:
     return _nickname
 
+
 def get_contacts() -> list[Contact]:
     return _contacts
 
-def get_history(target_id: str) -> list[Message]:
-    return _chat_history.get(target_id, [])
 
-# ── 登录/登出 ─────────────────────────────────────────────────
+def get_history(target_id: str, is_group: bool | None = None) -> list[Message]:
+    key = _history_key(target_id, is_group)
+    return _chat_history.get(key, [])
+
 
 def logout():
     global _client, _uid, _nickname
-    _client   = None
-    _uid      = ""
+    _client = None
+    _uid = ""
     _nickname = ""
+
     _friends.clear()
     _groups.clear()
     _contacts.clear()
     _chat_history.clear()
 
-# ── 网络通信 ──────────────────────────────────────────────────
 
 def _get_response(request: dict, timeout: float = 5.0) -> dict:
-    """
-    发送请求并阻塞等待第一条响应后返回。
-    临时替换 client.callback 捕获响应，完成后恢复原回调。
-    修复：获取原回调、健壮的回调恢复、严谨的客户端校验
-    """
-    # 严谨校验客户端：非空 + 运行中 + 存在callback属性
     if _client is None or not getattr(_client, "running", False) or not hasattr(_client, "callback"):
         return {}
-    # 提前获取客户端原回调
+
     original_callback = _client.callback
     event = threading.Event()
     response_holder = {}
 
+    async_push_types = {"message", "group_message", "file_message", "group_file_message", "system"}
+
     def _temp_callback(msg: dict):
-        """临时回调：捕获响应后触发事件，立即恢复原回调"""
-        if isinstance(msg, dict):  # 防护：确保消息是字典格式
-            response_holder.update(msg)
+        if not isinstance(msg, dict):
+            return
+
+        msg_type = msg.get("type")
+        if msg_type in async_push_types:
+            try:
+                original_callback(msg)
+            except Exception:
+                pass
+            return
+
+        response_holder.update(msg)
         event.set()
-        # 回调内也做恢复：防止后续逻辑执行异常导致原回调未恢复
-        if _client and _client.callback == _temp_callback:
-            _client.callback = original_callback
 
     try:
         _client.callback = _temp_callback
         _client.send_data(request)
         event.wait(timeout)
     finally:
-        if _client and _client.callback == _temp_callback:
+        if _client:
             _client.callback = original_callback
+
     return response_holder
 
-# ── 服务端请求接口 ────────────────────────────────────────────
 
 def request_contacts_list() -> dict:
-    """
-    请求会话列表。 服务器应返回{ "type":"contacts_list","contacts":[...] # Contact 列表}
-    """
-    # return dict(
-    #     type="contacts_list",
-    #     contacts=[Contact(id="1231", name="JohnDoe", is_group=False) ] +
-    #             [Contact(id="g123", name="StudyGroup", is_group=True)]
-    # )
     return _get_response({"type": "get_contacts_list", "username": _nickname})
 
+
 def request_friend_list() -> dict:
-    """请求好友列表。服务器应返回 {"type":"friend_list","friends":[...] # Friend 列表}"""
-    # return dict(
-    #     type="friend_list",
-    #     friends=[Friend(uid="10001", nickname="Alice")] +
-    #             [Friend(uid="10002", nickname="Bob")]
-    # )
     return _get_response({"type": "get_friend_list", "username": _nickname})
 
+
 def request_group_list() -> dict:
-    """请求群组列表。服务器应返回 {"type":"group_list","groups":[...]  # Group 列表}"""
-    # return dict(
-    #     type="group_list",
-    #     groups=[Group(gid="g123", name="Study Group")]
-    # )
     return _get_response({"type": "get_group_list", "username": _nickname})
 
+
 def request_add_friend(target_name: str) -> dict:
-    """发送加好友请求。服务器应返回 {"type":"add_friend","status":0 }"""
-    print(_nickname, target_name)
-    return _get_response({"type": "add_friend", "username": _nickname, "friendname": target_name})
+    return _get_response(
+        {
+            "type": "add_friend",
+            "username": _nickname,
+            "friendname": str(target_name),
+            "target": str(target_name),
+        }
+    )
+
 
 def request_join_group(gid: str) -> dict:
-    """发送加群请求。服务器应返回 {"type":"join_group","status":0}"""
-    return _get_response({"type": "join_group", "username": _nickname, "gid": gid})
+    return _get_response(
+        {
+            "type": "join_group",
+            "username": _nickname,
+            "gid": str(gid),
+            "groupname": str(gid),
+        }
+    )
+
 
 def request_leave_group(gid: str) -> dict:
-    """发送退群请求。服务器应返回 {"type":"leave_group","status":0}"""
-    return _get_response({"type": "leave_group", "username": _nickname, "gid": gid})
+    return _get_response(
+        {
+            "type": "leave_group",
+            "username": _nickname,
+            "gid": str(gid),
+            "groupname": str(gid),
+        }
+    )
+
 
 def request_group_members(gid: str) -> dict:
-    """
-    请求群成员列表。服务器应返回 
-    {
-        "type":"group_members",
-        "gid":"...",
-        "members":[...]
-    }
-    """
-    return _get_response({"type": "get_group_members", "username": _nickname, "gid": gid})
+    return _get_response(
+        {
+            "type": "get_group_members",
+            "username": _nickname,
+            "gid": str(gid),
+            "groupname": str(gid),
+        }
+    )
 
-def request_create_group(group_name: str, uids: list[str]) -> dict:
-    """
-    发送建群请求。
-    服务器应返回 {"type":"create_group","status":0,"gid":"..."}
-    :param group_name: 群聊名称
-    :param uids: 要加入群聊的用户uid列表，元素为str格式
-    """
-    if not group_name or not group_name.strip():
+
+def request_create_group(group_name: str, uids: list[str], with_ai: bool = False) -> dict:
+    group_name = str(group_name or "").strip()
+    if not group_name:
         return {"type": "create_group", "status": -1, "msg": "群名不能为空"}
-    if not uids or not all(isinstance(uid, str) and uid.strip() for uid in uids):
-        return {"type": "create_group", "status": -1, "msg": "uid列表不能为空，且所有uid必须为非空字符串"}
-    return _get_response({"type": "create_group", "username": _nickname, "group_name": group_name, "uids": uids})
 
-# ── 消息操作 ──────────────────────────────────────────────────
+    payload = {
+        "type": "create_group",
+        "username": _nickname,
+        "groupname": group_name,
+        "group_name": group_name,
+        "uids": [str(x) for x in (uids or []) if str(x).strip()],
+        "with_ai": bool(with_ai),
+    }
+    return _get_response(payload)
 
-def fetch_history(target_id: str) -> list[Message]:
-    """
-    向服务器请求某个会话的全部历史记录，缓存到内存并返回。
-    服务器应返回: {"type": "history", "target_id": "...", "messages": [...]}
-    每条消息格式: {"sender_uid","sender_nickname","content","time","is_self"}
-    """
-    # 模拟数据
-    # return [
-    #     Message(sender_uid="10002", sender_nickname="Bob", content="Hello!", time="2025-03-12 14:30:00", is_self=False),
-    #     Message(sender_uid="10003", sender_nickname="Charlie", content="Hi Bob!", time="2025-03-12 14:31:00", is_self=True)
-    # ]
 
-    resp = _get_response({"type": "get_history", "username": target_id})
+def fetch_history(target_id: str, is_group: bool | None = None) -> list[Message]:
+    target_id = str(target_id)
+    key = _history_key(target_id, is_group)
+    resp = _get_response(
+        {
+            "type": "get_history",
+            "username": _nickname,
+            "target": target_id,
+            "target_id": target_id,
+            "is_group": is_group,
+        }
+    )
+
     msgs = [_dict_to_message(d) for d in resp.get("messages", [])]
-    _chat_history[target_id] = msgs
-    _clear_unread(target_id)
+    _chat_history[key] = msgs
+    _clear_unread(target_id, is_group)
     return msgs
 
+
 def send_message(target_id: str, content: str, is_group: bool = False) -> bool:
-    """
-    发送消息到服务器，同时追加到本地缓存。
-    返回是否发送成功。
-    """
-    if _client is None or not _client.running:
+    if _client is None or not getattr(_client, "running", False):
         return False
 
-    packet = {
-        "type":    "group_message" if is_group else "message",
-        "username":   _uid,
-        "friendname": target_id,
-        "message":    content,
-    }
-    ok = _client.send_data(packet)
-    # if ok:
-    #     from datetime import datetime
-    #     msg = Message(
-    #         sender_uid=_uid,
-    #         sender_nickname=_nickname,
-    #         content=content,
-    #         time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    #         is_self=True,
-    #     )
-    #     _append_to_cache(target_id, msg)
-    return ok
+    target_id = str(target_id)
+    content = str(content)
 
-# def on_message_received(msg_dict: dict):
-#     """
-#     网络层收到推送消息时调用（由 client.callback 触发）。
-#     msg_dict 格式: {"type":"message","username":"...","message":"...","time":"..."}
-#     """
-#     msg_type = msg_dict.get("type")
-#     if msg_type not in ("message", "group_message"):
-#         return
+    if is_group:
+        packet = {
+            "type": "group_message",
+            "username": _nickname,
+            "groupname": target_id,
+            "groupid": target_id,
+            "groupmessage": content,
+            "message": content,
+        }
+    else:
+        packet = {
+            "type": "message",
+            "username": _nickname,
+            "friendname": target_id,
+            "friendid": target_id,
+            "message": content,
+        }
 
-#     target_id = msg_dict.get("username", "")
-#     msg = Message(
-#         sender_uid=target_id,
-#         sender_nickname=target_id,
-#         content=msg_dict.get("message", ""),
-#         time=msg_dict.get("time", ""),
-#         is_self=False,
-#     )
-    
-#     _append_to_cache(target_id, msg)
+    return _client.send_data(packet)
 
-# ── 内部工具 ──────────────────────────────────────────────────
 
-def _append_to_cache(target_id: str, msg: Message):
-    _chat_history.setdefault(target_id, []).append(msg)
-    _update_contact(target_id, msg)
+def _append_to_cache(target_id: str, msg: Message, is_group: bool | None = None):
+    target_id = str(target_id)
+    key = _history_key(target_id, is_group)
+    _chat_history.setdefault(key, []).append(msg)
+    _update_contact(target_id, msg, is_group)
 
-def _update_contact(target_id: str, msg: Message):
+
+def _update_contact(target_id: str, msg: Message, is_group: bool | None = None):
     for c in _contacts:
-        if c.id == target_id:
+        if c.id == target_id and (is_group is None or c.is_group == bool(is_group)):
             c.last_message = msg.content
-            c.last_time    = msg.time
+            c.last_time = msg.time
             if not msg.is_self:
                 c.unread += 1
             break
 
-def _clear_unread(target_id: str):
+
+def _clear_unread(target_id: str, is_group: bool | None = None):
     for c in _contacts:
-        if c.id == target_id:
+        if c.id == target_id and (is_group is None or c.is_group == bool(is_group)):
             c.unread = 0
             break
 
+
 def _dict_to_message(d: dict) -> Message:
+    sender_uid = str(d.get("sender_uid") or d.get("username") or d.get("sender_name") or "")
+    sender_nickname = str(
+        d.get("sender_nickname")
+        or d.get("sender_name")
+        or d.get("username")
+        or sender_uid
+    )
+    content = str(d.get("content") or d.get("message") or d.get("groupmessage") or "")
+    time = str(d.get("time") or "")
+
+    raw_is_self = d.get("is_self")
+    if isinstance(raw_is_self, bool):
+        is_self = raw_is_self
+    else:
+        is_self = sender_uid == _uid or sender_nickname == _nickname
+
     return Message(
-        sender_uid=d["sender_uid"],
-        sender_nickname=d["sender_nickname"],
-        content=d["content"],
-        time=d["time"],
-        is_self=d["is_self"],
+        sender_uid=sender_uid,
+        sender_nickname=sender_nickname,
+        content=content,
+        time=time,
+        is_self=is_self,
     )

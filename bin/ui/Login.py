@@ -2,15 +2,13 @@
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from pathlib import Path
-from PySide6.QtCore import Qt, Slot, QObject, Signal
+from PySide6.QtCore import Qt, Slot, Signal
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QLineEdit,
                                QStackedLayout, QMessageBox)
-from PySide6.QtCore import Qt, Slot
 from bin.ui.CommonCouple import TextInput, Button, ClassicLayout, Fonts
 from bin.MessageFormat import LoginInfo
 from bin.tool.LoginTool import LoginWindowTool as tool
-from typing import Tuple
+import bin.tool.ContactTool as CT
 
 # class NetworkSignals(QObject):
 #     msg_received = Signal(dict)
@@ -38,13 +36,15 @@ class LoginWindow(QWidget):
 
     iLoveLinux = Signal(str, str)
 
-    def __init__(self):
+    def __init__(self, default_server_host: str = "127.0.0.1", default_server_port: int = 8888):
         super().__init__()
+        self.defaultServerHost = str(default_server_host or "127.0.0.1")
+        self.defaultServerPort = int(default_server_port)
 
         # 窗口属性设置
         self.setWindowTitle("登录")                # 窗口标题
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setFixedSize(600, 320)               # 窗口尺寸
+        self.setFixedSize(600, 360)               # 窗口尺寸
 
         self.initUI()
 
@@ -69,9 +69,15 @@ class LoginWindow(QWidget):
         # 密码输入框-登录界面
         self.pwdInputerLogin = TextInput("密码: ", "请输入密码", TextInput.Hidden)
         self.pwdInputerLogin.setAlignment(ClassicLayout.Left)
+        self.serverIpInputerLogin = TextInput("服务器IP: ", "默认127.0.0.1")
+        self.serverIpInputerLogin.setAlignment(ClassicLayout.Left)
+        self.serverIpInputerLogin.setInput(self.defaultServerHost)
         # 密码输入框-注册界面
         self.pwdInputerRegister = TextInput("密       码: ", "请输入密码", TextInput.Hidden)
         self.pwdInputerRegister.setAlignment(ClassicLayout.Left)
+        self.serverIpInputerRegister = TextInput("服务器IP: ", "默认127.0.0.1")
+        self.serverIpInputerRegister.setAlignment(ClassicLayout.Left)
+        self.serverIpInputerRegister.setInput(self.defaultServerHost)
         
         # 密码确认框
         self.pwdVerification = TextInput("确认密码: ", "再次输入相同的密码", TextInput.Hidden)
@@ -93,12 +99,12 @@ class LoginWindow(QWidget):
         # 登录界面
         self.loginWindow = QWidget()
         self.loginWindow.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.loginWindow.setFixedSize(600, 320)
+        self.loginWindow.setFixedSize(600, 360)
 
         # 注册界面
         self.registerWindow = QWidget()
         self.registerWindow.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.registerWindow.setFixedSize(600, 320)
+        self.registerWindow.setFixedSize(600, 360)
 
     def applyLayout(self):
         '''
@@ -123,20 +129,22 @@ class LoginWindow(QWidget):
         self.pnlLayout.addWidget(self.loginAccountButton, 0, alignment=Qt.AlignmentFlag.AlignRight)
 
         # 登录界面布局
-        self.loginLayout = ClassicLayout.Vertical(align=ClassicLayout.CTop, constr=ClassicLayout.MinMax, margins=(80, 40, 80, 40), spacing=10)
+        self.loginLayout = ClassicLayout.Vertical(align=ClassicLayout.CTop, constr=ClassicLayout.MinMax, margins=(80, 24, 80, 24), spacing=10)
 
         self.loginLayout.addLayout(self.idInputerLogin, 0)
         self.loginLayout.addLayout(self.pwdInputerLogin, 0)
+        self.loginLayout.addLayout(self.serverIpInputerLogin, 0)
         self.loginLayout.addLayout(self.pnrLayout, 0)
         self.loginLayout.addStretch(1)
         self.loginLayout.addWidget(self.loginButton, 0, alignment=ClassicLayout.CBottom)
 
         # 注册界面布局
-        self.registerLayout = ClassicLayout.Vertical(align=ClassicLayout.CTop, constr=ClassicLayout.MinMax, margins=(60, 40, 60, 40), spacing=10)
+        self.registerLayout = ClassicLayout.Vertical(align=ClassicLayout.CTop, constr=ClassicLayout.MinMax, margins=(60, 24, 60, 24), spacing=10)
 
         self.registerLayout.addLayout(self.idInputerRegister, 0)
         self.registerLayout.addLayout(self.pwdInputerRegister, 0)
         self.registerLayout.addLayout(self.pwdVerification, 0)
+        self.registerLayout.addLayout(self.serverIpInputerRegister, 0)
         self.registerLayout.addLayout(self.pnlLayout, 0)
         self.registerLayout.addStretch(1)
         self.registerLayout.addWidget(self.registerButton, 0, alignment=ClassicLayout.CBottom)
@@ -185,6 +193,40 @@ class LoginWindow(QWidget):
         
         return LoginInfo(mode, id, password)
 
+    def _current_server_host(self) -> str:
+        host = self.serverIpInputerLogin.getInput() if self.switchLayout.currentIndex() == 0 else self.serverIpInputerRegister.getInput()
+        host = str(host or "").strip()
+        return host or "127.0.0.1"
+
+    def _sync_server_host_inputs(self, host: str):
+        self.serverIpInputerLogin.setInput(host)
+        self.serverIpInputerRegister.setInput(host)
+
+    def _ensure_server_connected(self) -> bool:
+        client = CT.get_client()
+        if client is None:
+            self.warning("客户端网络模块未初始化")
+            return False
+
+        host = self._current_server_host()
+        port = self.defaultServerPort
+        self._sync_server_host_inputs(host)
+
+        if getattr(client, "running", False) and getattr(client, "host", None) == host and getattr(client, "port", None) == port:
+            return True
+
+        try:
+            client.disconnect()
+        except Exception:
+            pass
+
+        ok = client.connect(host, port)
+        if not ok:
+            self.warning(f"无法连接服务器 {host}:{port}")
+            return False
+
+        return True
+
     @Slot()
     def findPassword(self):
         '''
@@ -206,11 +248,18 @@ class LoginWindow(QWidget):
             self.warning(str(result))
             return False
 
+        if not self._ensure_server_connected():
+            return
+
         # 获取ID, 向服务器发送找回密码请求,[get password]
         try:
             serverReply =  tool._request_pwd_find(account, password)
-        except:
+        except Exception:
             self.warning("网络错误")
+            return
+
+        if not serverReply:
+            self.warning("服务器无响应")
             return
         
         # 解析服务器返回消息[todo]
@@ -280,12 +329,19 @@ class LoginWindow(QWidget):
         if result != True:
             self.warning(str(result))
             return False
+
+        if not self._ensure_server_connected():
+            return False
         
         # 向服务器发送登录信息
         try:
             serverReply = tool._send_login_info(info)
-        except:
+        except Exception:
             self.warning("网络错误")
+            return False
+
+        if not serverReply:
+            self.warning("服务器无响应")
             return False
 
         # 解析服务器返回消息
@@ -346,12 +402,19 @@ class LoginWindow(QWidget):
         result = tool._validate_password(info.Password)
         if result != True:
             self.warning(str(result))
+            return
+
+        if not self._ensure_server_connected():
+            return
 
         # 向服务器发送登录信息
         try:
             serverReply = tool._send_register_info(info)
-        except:
+        except Exception:
             self.warning("网络错误")
+            return
+        if not serverReply:
+            self.warning("服务器无响应")
             return
         # 服务器信息处理
         if 'error' in serverReply.keys():
@@ -413,11 +476,13 @@ class LoginWindow(QWidget):
 
     @Slot()
     def switchToRegister(self):
+        self.serverIpInputerRegister.setInput(self.serverIpInputerLogin.getInput())
         self.switchLayout.setCurrentIndex(1)
         self.update()
     
     @Slot()
     def switchToLogin(self):
+        self.serverIpInputerLogin.setInput(self.serverIpInputerRegister.getInput())
         self.switchLayout.setCurrentIndex(0)
         self.update()
 
@@ -426,4 +491,3 @@ if __name__ == '__main__':
     Window = LoginWindow()
     Window.show()
     MMApp.exec()
-

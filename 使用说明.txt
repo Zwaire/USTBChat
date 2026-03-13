@@ -1,0 +1,183 @@
+USTBChat 使用说明（新手快速部署版）
+（已合并原“说明文档.txt”）
+
+====================
+一、先准备什么
+====================
+1. Python 3.11+
+2. MySQL 8.x
+3. （可选）Ollama + 本地AI服务（用于群聊机器人）
+
+项目目录：
+/home/aiden/chat_new_pull/USTBChat
+
+
+====================
+二、一步部署（推荐按顺序）
+====================
+第1步：进入项目目录
+cd /home/aiden/chat_new_pull/USTBChat
+
+第2步：安装依赖
+pip install -r requirements.txt
+
+第3步：启动MySQL
+sudo systemctl start mysql
+sudo systemctl enable mysql
+sudo systemctl status mysql
+
+若系统不支持systemctl：
+sudo service mysql start
+
+第4步：初始化数据库（首次必做）
+mysql -u root -p
+
+在MySQL中执行：
+
+DROP DATABASE IF EXISTS chat;
+CREATE DATABASE chat DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE chat;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    code VARCHAR(255) NOT NULL,
+    seed VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE user_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(255),
+    ip INT UNSIGNED,
+    login_time DATETIME,
+    time DATETIME,
+    status INT
+);
+
+CREATE TABLE friends (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    friend_id INT NOT NULL
+);
+
+CREATE TABLE groups_list (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE groups_member (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    user_id INT NOT NULL
+);
+
+CREATE TABLE messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    send_id INT NOT NULL,
+    recive_id INT NOT NULL,
+    message TEXT,
+    time DATETIME
+);
+
+CREATE TABLE group_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    send_id INT NOT NULL,
+    message TEXT,
+    time DATETIME
+);
+
+-- 用于“群聊添加智能助手lulu”
+CREATE TABLE IF NOT EXISTS group_ai_members (
+    group_id INT PRIMARY KEY,
+    ai_name VARCHAR(64) NOT NULL DEFAULT 'lulu'
+);
+
+exit
+
+第5步：启动聊天服务端（终端A）
+python server_main.py
+
+第6步：启动客户端（终端B）
+python client_main.py
+
+
+====================
+三、如何使用软件
+====================
+1. 登录/注册
+- 在登录页输入账号和密码。
+- 登录页有“服务器IP”输入框，默认127.0.0.1。
+- 若跨设备联机，请改为服务端机器的局域网IP（例如192.168.1.20）。
+
+2. 添加好友
+- 登录后点击左侧顶部“加好友”。
+- 输入好友用户名或UID，点击“添加”。
+- 若列表显示异常，点击“刷新”按钮一键刷新会话/好友/群聊列表。
+
+3. 私聊发消息
+- 在左侧点开好友会话。
+- 在中间下方输入框输入消息，点击“发送”。
+
+4. 创建群聊
+- 点击左侧顶部“建群聊”。
+- 输入群名并勾选成员。
+- 如需机器人入群，勾选“添加智能助手 lulu”。
+- 点击“确认”完成建群。
+
+5. 群聊发消息
+- 在左侧“群聊”中进入目标群。
+- 输入消息并点击“发送”。
+
+6. 让lulu回复（群聊内）
+- 在已添加lulu的群里发送：
+  @lulu 你的问题
+  或
+  @智能助手 你的问题
+- lulu会以群成员身份回复。
+
+
+====================
+四、多人/跨设备使用
+====================
+1. 服务端机器运行server_main.py。
+2. 同一局域网其他设备打开客户端。
+3. 登录页把“服务器IP”改成服务端机器IP。
+4. 点击登录即可连接到同一聊天服务。
+
+
+====================
+五、可选：启用AI服务
+====================
+若要让lulu真正使用大模型回复，还需启动AI服务。
+
+1. 启动Ollama（并确保模型可用，例如qwen2.5:1.5b）
+2. 启动AI接口服务（终端C）：
+python AI_assistant/mylocal/assistant_service.py
+
+
+====================
+六、常见问题
+====================
+1. 客户端登录提示连不上
+- 确认server_main.py正在运行
+- 确认登录页“服务器IP”正确
+- 确认端口8888未被防火墙拦截
+
+2. 注册/登录失败
+- 确认MySQL已启动
+- 确认chat库和数据表已创建
+
+3. lulu不回复
+- 确认建群时勾选了“添加智能助手 lulu”
+- 确认AI服务已启动（assistant_service.py）
+- 确认消息是以@lulu或@智能助手开头
+
+4. 群里出现“AI服务请求失败 / Connection refused”
+- 说明5001端口的AI服务未启动或不可达
+- 在项目根目录新开终端执行：
+  python AI_assistant/mylocal/assistant_service.py
+- 若AI服务不在本机，请先设置并重启聊天服务端：
+  export USTBCHAT_AI_URL=http://<AI服务IP>:5001
+  python server_main.py
