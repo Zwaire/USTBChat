@@ -197,7 +197,7 @@ class LoginWindow(QWidget):
             self.warning(str(result))
             return
 
-        # 获取ID, 向服务器发送找回密码请求
+        # 获取ID, 向服务器发送找回密码请求,[get password]
         try:
             serverReply =  tool._request_pwd_find(account)
         except:
@@ -274,7 +274,7 @@ class LoginWindow(QWidget):
         
         # 向服务器发送登录信息
         try:
-            serverReply = tool._send_login_info(info, client=self.client)
+            serverReply = tool._send_login_info(info)
         except:
             self.warning("网络错误")
             return False
@@ -335,7 +335,7 @@ class LoginWindow(QWidget):
 
         # 向服务器发送登录信息
         try:
-            serverReply = tool._send_register_info(info, client=self.client)
+            serverReply = tool._send_register_info(info)
         except:
             self.warning("网络错误")
             return
@@ -394,7 +394,7 @@ class LoginWindow(QWidget):
         '''
 
         QMessageBox.warning(self, "", text)
-        # raise ValueError("this is a error")
+        raise ValueError("this is a error")
         return
 
     @Slot()

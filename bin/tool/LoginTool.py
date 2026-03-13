@@ -89,8 +89,9 @@ class LoginWindowTool:
                 salt + PEPPER.encode('utf-8'),
                 100_000
         )
+        print(dk.hex())
         return salt.hex() + '$' + dk.hex()
-    # [TODO] 检查找回密码之后是否有后续的对应的注册页面
+    
     @classmethod
     def _request_pwd_find(cls, id: str) -> dict:
         ''' 
@@ -109,7 +110,7 @@ class LoginWindowTool:
         return response 
 
     @classmethod
-    def _send_register_info(cls, info: LoginInfo, client=None) -> dict:
+    def _send_register_info(cls, info: LoginInfo) -> dict:
         ''' 
         向服务器发送注册信息，错误会返回名为"error"的键，成功则返回服务器响应的字典，返回的格式如下所示
         dict={
@@ -117,10 +118,12 @@ class LoginWindowTool:
             "status": 0
         }
         '''
+        
         _pwd = info.Password
-
+        # print(_pwd)
         # 对密码进行客户端派生加密（返回格式为 "salt$derived_key"）
         encrypted = cls._pwd_encryption(_pwd)
+        # print(f"word is {encrypted}")
         if not encrypted:
             return {"error": "empty password"}
         
@@ -131,7 +134,7 @@ class LoginWindowTool:
             "username": getattr(info, 'ID', ''),
             "ip": LoginInfo._get_localip()
         }
-
+        # print(f"request is {request}")
         response = contact_tool._get_response(request)
         if not response:
             return {"error": "no response from server"}
@@ -139,7 +142,7 @@ class LoginWindowTool:
             return response
 
     @classmethod
-    def _send_login_info(cls, info: LoginInfo, client=None) -> dict:
+    def _send_login_info(cls, info: LoginInfo) -> dict:
         ''' 
         向服务器发送登录信息，错误会返回名为"error"的键，成功则返回服务器响应的字典
         '''
@@ -151,9 +154,9 @@ class LoginWindowTool:
             ip = LoginInfo._get_localip()
         )
         response_for_seed = contact_tool._get_response(request_for_seed)
-        # 返回的格式应该是 dict{"type":"seed", "code":"salt"}
+        # 返回的格式应该是 dict{"type":"seed", "seed":"salt"}
         PEPPER = os.environ.get("USTBCHAT_PWD_PEPPER", "USTBChat_Default_Pepper_ChangeMe")
-        salt_hex = response_for_seed.get("code", "")
+        salt_hex = response_for_seed.get("seed", "")
         try:
             salt = bytes.fromhex(salt_hex)
         except ValueError:
@@ -170,7 +173,7 @@ class LoginWindowTool:
         # 构建发送到服务器的请求体
         request = {
             "type": "login",
-            "username": getattr(info, 'ID', ''),
+            "username": info.ID,
             "code": dk.hex(), 
             "ip": LoginInfo._get_localip()
         }
