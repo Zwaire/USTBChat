@@ -951,8 +951,10 @@ class MainWindow(QWidget):
             type(str): myUID, myName, groupUID, groupName
         '''
 
+        # print(type, ":", value)
+
         if type == 'myUID':
-            self.personalUID.setText(value)
+            self.personalUID.setText("UID: " + value)
         elif type == 'myName':
             self.personalID.setText(value)
         elif type == 'groupUID':
