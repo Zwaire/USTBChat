@@ -373,7 +373,7 @@ def get_friends(name):
         result_user = cursor.fetchone()
         if result_user:
             friends.append({
-                "uid": result_user[1],
+                "uid": result_user[0],
                 "nickname": result_user[1]
             })
 

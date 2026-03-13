@@ -1013,7 +1013,17 @@ class MainWindow(QWidget):
         # 将Contact转换为能直接用的ContactBar
         self.newsContactBarList = []
         for x in response['contacts']:
-            _ = contactToBar(x)
+
+            aContact = Contact(
+                x['id'],
+                x['name'],
+                x['is_group'],
+                x['last_message'],
+                x['last_time'],
+                x['unread'] == 0
+            )
+
+            _ = contactToBar(aContact)
             _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = _.Type: self.showSpecificChatArea(uid, isGroup))
             self.newsContactBarList.append(_)
         # self.newsContactBarList[0].printInfo()
@@ -1038,6 +1048,7 @@ class MainWindow(QWidget):
             break
 
         # 解析服务器消息
+        print("_----------------------", response['type'])
         if response['type'] != 'friend_list':
             return False
         
@@ -1046,7 +1057,13 @@ class MainWindow(QWidget):
         # 转换为Bar
         # self.friendsBarList = [friendToBar(x) for x in response['friends']]
         for x in response['friends']:
-            _ = friendToBar(x)
+
+            aFriend = Friend(
+                x['uid'],
+                x['nickname']
+            )
+
+            _ = friendToBar(aFriend)
             _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = False: self.showSpecificChatArea(uid, isGroup))
             self.friendsBarList.append(_)
 
@@ -1077,7 +1094,14 @@ class MainWindow(QWidget):
         self.partiesBarList.clear()
 
         for x in response['groups']:
-            _ = partyToBar(x)
+
+            aGroup = Group(
+                x['gid'],
+                x['name'],
+                None
+            )
+
+            _ = partyToBar(aGroup)
             _.hasBeenClicked.connect(lambda uid = _.UID, isGroup = True: self.showSpecificChatArea(uid, isGroup))
             self.partiesBarList.append(_)
 
