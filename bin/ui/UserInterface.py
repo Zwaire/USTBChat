@@ -1048,7 +1048,6 @@ class MainWindow(QWidget):
             break
 
         # 解析服务器消息
-        print("_----------------------", response['type'])
         if response['type'] != 'friend_list':
             return False
         
@@ -1376,7 +1375,7 @@ def wipeOutChildItemOfLayout(layout: QLayout, delete_layout_itself: bool = False
     # 递归基线：当布局中不再有项时停止
     while layout.count():
         # 获取并移除最顶层的项
-        item: QLayoutItem = layout.takeAt(0)
+        item: QLayoutItem = layout.takeAt(0) #type: ignore
         if item is None:
             continue
 
