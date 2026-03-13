@@ -88,6 +88,7 @@ class TextInput(QHBoxLayout):
 
         # 定义获取输入值的函数
         self.getInput = lambda: qInput.text()
+        self.clearInput = lambda: qInput.clear()
 
         # 设置布局属性
         self.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
@@ -182,6 +183,7 @@ class ClassicLayout():
 
     # 常用边界间距
     NoBorder = (0, 0, 0, 0)
+    TinyBorder = (5, 5, 5, 5)
     SmallBorder = (20, 20, 20, 20)
     LargeBorder = (40, 40, 40, 40)
 

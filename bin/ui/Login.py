@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt, Slot, QObject, Signal
 from PySide6.QtWidgets import (QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout, QSizePolicy, QLineEdit,
                                QStackedLayout, QMessageBox)
 from PySide6.QtCore import Qt, Slot
-from CommonCouple import TextInput, Button, ClassicLayout, Fonts
+from bin.ui.CommonCouple import TextInput, Button, ClassicLayout, Fonts
 from bin.MessageFormat import LoginInfo
 from bin.tool.LoginTool import LoginWindowTool as tool
 

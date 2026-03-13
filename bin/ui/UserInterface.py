@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (QApplication, QLayoutItem, QWidget, QLabel, QPush
                                QStackedLayout, QMenu)
 from PySide6.QtGui import QMouseEvent, QTextOption, QAction
 from PySide6.QtCore import Qt, Slot, QObject, Signal
-from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator, TextInput
+from bin.ui.CommonCouple import Section, Fonts, Button, ClassicLayout, Separator, TextInput
 
 # 新增引入状态管理和消息模型
 # from bin.state.AppState import AppState
@@ -119,10 +119,189 @@ class AddFriendPartyWindow(QWidget):
             QMessageBox.warning(self, "", "该群聊不存在")
         elif status == 0:
             # 添加成功
+            self.uidInputer.clearInput()
             self.addSuccess.emit()
             QMessageBox.warning(self, "", "添加成功")
         else:
             QMessageBox.warning(self, "", "服务器状态错误")
+
+class CreatePartyWindow(QWidget):
+    '''创建群聊时的窗口'''
+
+    class OptionFriendBar(QWidget):
+        '''
+        现在我每写一个class我心脏都得停跳一拍
+        '''
+
+        SelectedStyle = """
+            #FriendBar {
+                border: 2px solid #3a86ff;
+                border-radius: 8px;
+                padding: 8px;
+                background-color: #73FE01;
+            }
+        """
+
+        UnSelectedStyle = """
+            #FriendBar {
+                border: 2px solid #3a86ff;
+                border-radius: 8px;
+                padding: 8px;
+                background-color: #FFFFFF;
+            }
+        """
+
+        def __init__(self, name: str, uid: str, selected: bool = False):
+            super().__init__()
+
+            self.setObjectName("FriendBar")
+            self.UID = uid
+            self.selected = selected
+            self.initUI()
+            self.modifyName(name)
+
+        def initUI(self):
+
+            if self.selected:
+                self.setStyleSheet(self.SelectedStyle)
+            else:
+                self.setStyleSheet(self.UnSelectedStyle)
+
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self.setFixedSize(320, 50)
+
+            self.creWidgets()
+            self.applyLayout()
+
+        def creWidgets(self):
+
+            self.userName = QLabel()
+            self.userName.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self.userName.setFixedSize(200, 40)
+        
+        def applyLayout(self):
+
+            self.mainLayout = ClassicLayout.Horizontal(
+                ClassicLayout.CLeft,
+                ClassicLayout.Max,
+                (5, 5, 5, 5),
+                0
+            )
+
+            self.mainLayout.addWidget(self.userName, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            self.mainLayout.addStretch(1)
+            self.setLayout(self.mainLayout)
+
+        def mousePressEvent(self, event: QMouseEvent) -> None:
+            
+            self.switchSelected()
+
+            return super().mousePressEvent(event)
+
+        def switchSelected(self):
+
+            if self.selected:
+                self.selected = False
+                self.setStyleSheet(self.UnSelectedStyle)
+            else:
+                self.selected = True
+                self.setStyleSheet(self.SelectedStyle)
+
+        def modifyName(self, newName: str):
+
+            self.userName.setText(newName)
+
+    def __init__(self, friends: List[Friend]):
+        super().__init__()
+
+        self.friends = friends
+        self.initUI()
+
+    def initUI(self):
+
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setFixedSize(420, 650)
+
+        self.creWidgets()
+        self.applyLayout()
+
+    def creWidgets(self):
+
+        self.partyName = TextInput(
+            "群名称: ",
+            "请输入群聊的名称",
+            TextInput.Displayed,
+            (240, 40),
+            Fonts.UniversalPlainFont
+        )
+
+        self.confirmButton = Button(
+            "确认",
+            "点击后以当前选中的用户为成员创建群聊",
+            (80, 40),
+            Fonts.UniversalPlainFont
+        )
+
+    def applyLayout(self):
+
+        # 群聊名称行
+        self.partyNameRow = Section(
+            (420, 50),
+            Section.Fixed
+        )
+
+        self.partyNameLayout = ClassicLayout.Horizontal(
+            ClassicLayout.CLeft,
+            ClassicLayout.Max,
+            ClassicLayout.TinyBorder,
+            5
+        )
+
+        self.partyNameLayout.addLayout(self.partyName, 0)
+        self.partyNameLayout.addStretch(1)
+        self.partyNameLayout.addWidget(self.confirmButton, 0)
+        self.partyNameRow.setLayout(self.partyNameLayout)
+
+        # 好友列表
+        self.friendsListSection = Section(
+            (420, 600),
+            Section.Fixed
+        )
+
+        self.scrollableFriendsList = QScrollArea()
+        self.scrollableFriendsList.setWidgetResizable(True)
+        self.scrollableFriendsList.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scrollableFriendsList.setWidget(self.friendsListSection)
+
+        self.friendsListLayout = ClassicLayout.Vertical(
+            ClassicLayout.LTop,
+            ClassicLayout.MinMax,
+            ClassicLayout.TinyBorder,
+            5
+        )
+
+        for i in range(len(self.friends)):
+            _ = self.OptionFriendBar(
+                self.friends[i].nickname,
+                self.friends[i].uid
+            )
+
+            self.friendsListLayout.addWidget(_, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+
+        self.friendsListSection.setLayout(self.friendsListLayout)
+
+        self.mainLayout = ClassicLayout.Vertical(
+            ClassicLayout.CTop,
+            ClassicLayout.Max,
+            ClassicLayout.NoBorder,
+            0
+        )
+
+        self.mainLayout.addWidget(self.partyNameRow, 0)
+        self.mainLayout.addWidget(Separator(width=1))
+        self.mainLayout.addWidget(self.scrollableFriendsList, 1)
+
+        self.setLayout(self.mainLayout)
 
 
 class MainWindow(QWidget):
@@ -308,6 +487,7 @@ class MainWindow(QWidget):
             super().__init__()
 
             self.UID = UID
+            self.Name = ID
 
             self.initUI()
             self.setStyleSheet("border: 2px solid blue;")
@@ -491,6 +671,10 @@ class MainWindow(QWidget):
         self.partiesBarList = []
 
         self.cachedChatHistory = dict()
+
+        self.friendAddWindow = None
+        self.partyAddWindow = None
+        self.createPartyWindow = None
 
         # 分三个部分初始化界面
         self.initUI()
@@ -899,9 +1083,15 @@ class MainWindow(QWidget):
 
         # import bin.tool.ContactTool as CTool
 
-        print("I am clicked")
+        # print("I am clicked")
         self.CurrentChatID = UID
         self.isCurrentChatGroup = isGroup
+
+        # 若是私聊, 则隐藏右边的区域
+        if not isGroup:
+            self.rightSideBarSection.setHidden(True)
+        else:
+            self.rightSideBarSection.setHidden(False)
 
         # 清空聊天区域
         wipeOutChildItemOfLayout(self.messageDisplayLayout)
@@ -1054,6 +1244,7 @@ class MainWindow(QWidget):
 
         actionAddFriend.triggered.connect(lambda checked: self.openFriendAddWindow())
         actionAddParty.triggered.connect(lambda checked: self.openPartyAddWindow())
+        actionCreateParty.triggered.connect(lambda checked: self.openCreatePartyWindow())
 
         menu.addAction(actionAddFriend)
         menu.addSeparator()
@@ -1065,16 +1256,38 @@ class MainWindow(QWidget):
 
     def openFriendAddWindow(self):
 
-        self.friendAddWindow = AddFriendPartyWindow(True)
-        self.friendAddWindow.addSuccess.connect(lambda: self.getFriendsListFromServer())
-        self.friendAddWindow.show()
+        if self.friendAddWindow != None:
+            if not self.friendAddWindow.isVisible():
+                self.friendAddWindow.show()
+        else:
+            self.friendAddWindow = AddFriendPartyWindow(True)
+            self.friendAddWindow.addSuccess.connect(lambda: self.getFriendsListFromServer())
+            self.friendAddWindow.show()
         return
     
     def openPartyAddWindow(self):
         
-        self.partyAddWindow = AddFriendPartyWindow(False)
-        self.partyAddWindow.addSuccess.connect(lambda: self.getGroupsListFromServer())
-        self.partyAddWindow.show()
+        if self.partyAddWindow != None:
+            if not self.partyAddWindow.isVisible():
+                self.partyAddWindow.show()
+        else:
+            self.partyAddWindow = AddFriendPartyWindow(False)
+            self.partyAddWindow.addSuccess.connect(lambda: self.getGroupsListFromServer())
+            self.partyAddWindow.show()
+        return
+
+    def openCreatePartyWindow(self):
+
+        if self.createPartyWindow != None:
+            if not self.createPartyWindow.isVisible():
+                self.createPartyWindow.show()
+        else:
+
+            friendsList = [Friend(x.UID, x.Name) for x in self.friendsBarList]
+
+            self.createPartyWindow = CreatePartyWindow(friendsList)
+            # self.createPartyWindow.addSuccess.connect(lambda: self.getGroupsListFromServer())
+            self.createPartyWindow.show()
         return
 
 def cleanWidgetsInLayout(layout: QLayout, left: int = 0):
