@@ -94,6 +94,7 @@ def log_in(name, code, ip):
         return {"type": "login", "status": 8}
 
     if user[2] == code:
+        user_id_6str = f"{user[0]:06d}"
         sql = "SELECT * FROM user_sessions WHERE user_id=%s"
         cursor.execute(sql, (user[0],))
         results_two = cursor.fetchall()
@@ -104,14 +105,14 @@ def log_in(name, code, ip):
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "login", "status": 0,"id":user[0],"name":user[1]}
+            return {"type": "login", "status": 0,"id":user_id_6str,"name":user[1]}
         else:
             sql = "INSERT INTO user_sessions (user_id,  ip, login_time,  status) VALUES (%s, INET_ATON(%s), NOW(), %s)"
             cursor.execute(sql, (user[0],  ip, 1))
             db.commit()
             cursor.close()
             db.close()
-            return {"type": "login", "status": 0,"id":user[0],"name":user[1]}
+            return {"type": "login", "status": 0,"id":user_id_6str,"name":user[1]}
     else:
         cursor.close()
         db.close()
