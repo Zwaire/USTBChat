@@ -176,8 +176,9 @@ class CreatePartyWindow(QWidget):
         def creWidgets(self):
 
             self.userName = QLabel()
-            self.userName.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-            self.userName.setFixedSize(200, 40)
+            self.userName.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            self.userName.setFixedHeight(40)
+            self.userName.setFont(Fonts.UniversalPlainFont)
         
         def applyLayout(self):
 
@@ -205,7 +206,7 @@ class CreatePartyWindow(QWidget):
                 self.setStyleSheet(self.UnSelectedStyle)
             else:
                 self.selected = True
-                self.setStyleSheet(self.SelectedStyle)
+                self.setStyleSheet("background-color: #888888")
 
         def modifyName(self, newName: str):
 
@@ -302,6 +303,12 @@ class CreatePartyWindow(QWidget):
         self.mainLayout.addWidget(self.scrollableFriendsList, 1)
 
         self.setLayout(self.mainLayout)
+
+    def slotsConnect(self):
+        pass
+
+    def onConfirmButton(self):
+        '''点击确认按钮, 想服务器发送创建群聊请求'''
 
 
 class MainWindow(QWidget):
