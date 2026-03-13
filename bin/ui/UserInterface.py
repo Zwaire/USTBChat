@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (QApplication, QLayoutItem, QWidget, QLabel, QPush
                                QStackedLayout, QMenu)
 from PySide6.QtGui import QMouseEvent, QTextOption, QAction
 from PySide6.QtCore import Qt, Slot, QObject, Signal
-from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
+from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator, TextInput
 
 # 新增引入状态管理和消息模型
 # from bin.state.AppState import AppState
@@ -28,6 +28,59 @@ import bin.tool.ContactTool as CT
 # 新增一个信号类，用于安全地将子线程收到的网络消息抛给主线程 UI
 class MainSignals(QObject):
     msg_received = Signal(dict)
+
+class AddFriendPartyWindow(QWidget):
+    '''
+    右键菜单中用以添加好友或群聊的窗口
+    '''
+
+    def __init__(self, addFriend: bool):
+        '''
+        Args:
+            addFriend(bool): 该窗口的类型, 若为True则是添加好友, 若为False则为添加群聊
+        '''
+        super().__init__()
+
+        self.FriendAddType = addFriend
+        self.initUI()
+
+    def initUI(self):
+        
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setFixedSize(460, 50)
+
+        self.creWidgets()
+        self.applyLayout()
+
+    def creWidgets(self):
+
+        # 用来输入UID的输入框
+        self.uidInputer = TextInput(
+            "UID: ",
+            "输入要添加的好友的UID" if self.FriendAddType else "输入要添加的群聊的UID",
+            TextInput.Displayed,
+            (360, 40),
+            Fonts.UniversalPlainFont
+        )
+
+        # 添加按钮
+        self.addButton = Button(
+            "添加",
+            "点击以向该用户申请添加好友" if self.FriendAddType else "点击以向该群聊申请加入",
+            (80, 40),
+            Fonts.UniversalPlainFont
+        )
+
+    def applyLayout(self):
+
+        # 水平布局
+        self.mainLayout = ClassicLayout.Horizontal(ClassicLayout.Center, ClassicLayout.MinMax, (10, 5, 10, 5), 5)
+
+        self.mainLayout.addLayout(self.uidInputer, 0)
+        self.mainLayout.addStretch(1)
+        self.mainLayout.addWidget(self.addButton, 0)
+
+        self.setLayout(self.mainLayout)
 
 class MainWindow(QWidget):
     '''
@@ -954,13 +1007,28 @@ class MainWindow(QWidget):
         actionAddParty = QAction("添加群聊", self)
         actionCreateParty = QAction("发起群聊", self)
 
+        actionAddFriend.triggered.connect(lambda checked: self.openFriendAddWindow())
+        actionAddParty.triggered.connect(lambda checked: self.openPartyAddWindow())
+
         menu.addAction(actionAddFriend)
         menu.addSeparator()
         menu.addAction(actionAddParty)
         menu.addSeparator()
         menu.addAction(actionCreateParty)
 
-        menu.exec_(target.mapToGlobal(pos))
+        menu.exec(target.mapToGlobal(pos))
+
+    def openFriendAddWindow(self):
+
+        self.friendAddWindow = AddFriendPartyWindow(True)
+        self.friendAddWindow.show()
+        return
+    
+    def openPartyAddWindow(self):
+        
+        self.partyAddWindow = AddFriendPartyWindow(False)
+        self.partyAddWindow.show()
+        return
 
 def cleanWidgetsInLayout(layout: QLayout, left: int = 0):
     '''清理布局中的组件, 但保留最后left数量的组件'''
