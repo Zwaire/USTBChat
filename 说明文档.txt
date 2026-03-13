@@ -1,4 +1,0 @@
-本文件内容已合并到 `使用说明.txt`。
-
-请优先查看：
-/home/aiden/chat_new_pull/USTBChat/使用说明.txt

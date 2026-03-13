@@ -4,6 +4,7 @@
 """
 
 import os
+import re
 import socket
 import threading
 from datetime import datetime
@@ -455,7 +456,34 @@ class ChatServer:
         if not text:
             return False
         raw = str(text).strip()
-        return raw.startswith("@智能助手") or raw.startswith(f"@{self.ai_name}")
+        prefixes = [
+            f"@{self.ai_name}",
+            "@lulu",
+            "@智能助手",
+        ]
+        for prefix in prefixes:
+            if prefix and raw.startswith(prefix):
+                return True
+        return False
+
+    def extract_ai_prompt(self, text: str) -> str:
+        raw = str(text or "").strip()
+        if not raw:
+            return ""
+
+        prefixes = [
+            f"@{self.ai_name}",
+            "@lulu",
+            "@智能助手",
+        ]
+        for prefix in prefixes:
+            if prefix and raw.startswith(prefix):
+                raw = raw[len(prefix):].strip()
+                break
+
+        # 清理触发词后的常见分隔符
+        raw = re.sub(r"^[，,：:\s]+", "", raw).strip()
+        return raw
 
     def format_ai_error(self, err_text: str) -> str:
         raw = str(err_text or "")
@@ -562,26 +590,30 @@ class ChatServer:
     def handle_ai_private(self, username: str, friendname: str, message: str, raw_msg: dict):
         if not self.ai_client or not self.is_ai_trigger(message):
             return
+        prompt = self.extract_ai_prompt(message)
+        if not prompt:
+            self.send_private_from_ai(username, friendname, "请在@lulu后输入你的问题。")
+            return
 
         filename, file_content = self.extract_file_info(raw_msg)
         if file_content:
             result = self.ai_client.summarize_private(
                 username=username,
                 friendname=friendname,
-                message=message,
+                message=prompt,
                 filename=filename or "未知文件",
                 content=file_content,
             )
             reply_text = result.get("summary") if result.get("status") == 0 else self.format_ai_error(result.get("error", "未知错误"))
         else:
             recent_messages = db.get_recent_private_messages(username, friendname, limit=5)
-            if not recent_messages or recent_messages[-1].get("message") != message:
-                recent_messages.append({"username": username, "message": message})
+            if not recent_messages or recent_messages[-1].get("message") != prompt:
+                recent_messages.append({"username": username, "message": prompt})
 
             result = self.ai_client.reply_private(
                 username=username,
                 friendname=friendname,
-                message=message,
+                message=prompt,
                 recent_messages=recent_messages,
             )
             reply_text = result.get("reply") if result.get("status") == 0 else self.format_ai_error(result.get("error", "未知错误"))
@@ -591,26 +623,30 @@ class ChatServer:
     def handle_ai_group(self, username: str, groupname: str, groupmessage: str, raw_msg: dict):
         if not self.ai_client or not db.is_ai_in_group(groupname) or not self.is_ai_trigger(groupmessage):
             return
+        prompt = self.extract_ai_prompt(groupmessage)
+        if not prompt:
+            self.send_group_from_ai(groupname, "请在@lulu后输入你的问题。")
+            return
 
         filename, file_content = self.extract_file_info(raw_msg)
         if file_content:
             result = self.ai_client.summarize_group(
                 username=username,
                 groupname=groupname,
-                groupmessage=groupmessage,
+                groupmessage=prompt,
                 filename=filename or "未知文件",
                 content=file_content,
             )
             reply_text = result.get("summary") if result.get("status") == 0 else self.format_ai_error(result.get("error", "未知错误"))
         else:
             recent_messages = db.get_recent_group_messages(groupname, limit=5)
-            if not recent_messages or recent_messages[-1].get("message") != groupmessage:
-                recent_messages.append({"username": username, "message": groupmessage})
+            if not recent_messages or recent_messages[-1].get("message") != prompt:
+                recent_messages.append({"username": username, "message": prompt})
 
             result = self.ai_client.reply_group(
                 username=username,
                 groupname=groupname,
-                groupmessage=groupmessage,
+                groupmessage=prompt,
                 recent_messages=recent_messages,
             )
             reply_text = result.get("reply") if result.get("status") == 0 else self.format_ai_error(result.get("error", "未知错误"))

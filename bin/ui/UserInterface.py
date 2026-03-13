@@ -874,6 +874,11 @@ class MainWindow(QWidget):
         self.partyMemberCount = QLabel("在线 0/0")
         self.partyMemberCount.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
         self.partyMemberCount.setStyleSheet("color: gray;")
+        self.partyAtmosphereTitle = QLabel("群聊氛围")
+        self.partyAtmosphereTitle.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 11))
+        self.partyAtmosphereLabel = QLabel("平静")
+        self.partyAtmosphereLabel.setFont(Fonts.sizedFont(Fonts.UniversalPlainFont, 10))
+        self.partyAtmosphereLabel.setStyleSheet("color: #4287f5;")
 
         # 群聊信息区域
         self.partyInfoSection = Section((200, 60), Section.Fixed)
@@ -1020,6 +1025,9 @@ class MainWindow(QWidget):
         self.partyMemberListBody.setLayout(self.partyMemberListLayout)
         self.scrollablePartyMembers.setWidget(self.partyMemberListBody)
         self.partyMemberLayout = ClassicLayout.Vertical(ClassicLayout.LTop, ClassicLayout.MinMax, (8, 8, 8, 8), 6)
+        self.partyMemberLayout.addWidget(self.partyAtmosphereTitle, 0)
+        self.partyMemberLayout.addWidget(self.partyAtmosphereLabel, 0)
+        self.partyMemberLayout.addWidget(Separator(width=1), 0)
         self.partyMemberLayout.addWidget(self.partyMemberTitle, 0)
         self.partyMemberLayout.addWidget(self.partyMemberCount, 0)
         self.partyMemberLayout.addWidget(self.scrollablePartyMembers, 1)
@@ -1112,6 +1120,25 @@ class MainWindow(QWidget):
             self.partyMemberListLayout.insertWidget(self.partyMemberListLayout.count() - 1, bar)
 
         self.partyMemberListLayout.update()
+        return True
+
+    def refresh_group_atmosphere(self, gid: str) -> bool:
+        gid = str(gid)
+        response = self._request_with_expected(lambda: CT.request_group_atmosphere(gid), "group_atmosphere", retry=3)
+        if not response:
+            self.partyAtmosphereLabel.setText("未知")
+            self.partyAtmosphereLabel.setStyleSheet("color: #888888;")
+            return False
+
+        if int(response.get("status", 1)) != 0:
+            self.partyAtmosphereLabel.setText("未知")
+            self.partyAtmosphereLabel.setStyleSheet("color: #888888;")
+            return False
+
+        label = str(response.get("label") or response.get("emotion") or "平静")
+        color = str(response.get("color") or "#4287f5")
+        self.partyAtmosphereLabel.setText(label)
+        self.partyAtmosphereLabel.setStyleSheet(f"color: {color};")
         return True
 
     def modifyID(self, type: str, value: str):
@@ -1346,6 +1373,7 @@ class MainWindow(QWidget):
             self.rightSideBarSection.setHidden(False)
             self.modifyID('groupUID', f"GID: {UID}")
             self.modifyID('groupName', self._resolve_chat_name(UID, True))
+            self.refresh_group_atmosphere(UID)
             self.refresh_group_members(UID)
 
         # 清空聊天区域
@@ -1463,6 +1491,9 @@ class MainWindow(QWidget):
         if self.CurrentChatID:
             self._fetch_chat_history(self.CurrentChatID, self.isCurrentChatGroup)
             self.showSpecificChatArea(self.CurrentChatID, self.isCurrentChatGroup)
+            if self.isCurrentChatGroup:
+                self.refresh_group_atmosphere(self.CurrentChatID)
+                self.refresh_group_members(self.CurrentChatID)
 
         if show_tip:
             if ok_contacts and ok_friends and ok_groups:

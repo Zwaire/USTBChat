@@ -11,6 +11,7 @@ from ollama_client import (
     generate_reply,
     summarize_file,
     analyze_atmosphere,
+    get_ollama_runtime_status,
 )
 
 app = Flask(__name__)
@@ -76,10 +77,15 @@ def _validate_recent_messages(data: dict, resp_type: str):
 
 @app.route("/health", methods=["GET"])
 def health():
+    runtime = get_ollama_runtime_status()
+    ready = bool(runtime.get("sdk_available")) and (
+        bool(runtime.get("active_model")) or len(runtime.get("available_models") or []) > 0
+    )
     return jsonify({
         "type": "health",
-        "status": 0,
-        "message": "assistant service is running"
+        "status": 0 if ready else 1,
+        "message": "assistant service is running" if ready else "assistant service is running but ollama not ready",
+        "ollama": runtime,
     })
 
 
@@ -182,4 +188,3 @@ def ai_atmosphere():
 
 if __name__ == "__main__":
     app.run(host=SERVICE_HOST, port=SERVICE_PORT, debug=False)
-

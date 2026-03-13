@@ -171,6 +171,17 @@ def request_group_members(gid: str) -> dict:
     )
 
 
+def request_group_atmosphere(gid: str) -> dict:
+    return _get_response(
+        {
+            "type": "get_group_atmosphere",
+            "username": _nickname,
+            "gid": str(gid),
+            "groupname": str(gid),
+        }
+    )
+
+
 def request_create_group(group_name: str, uids: list[str], with_ai: bool = False) -> dict:
     group_name = str(group_name or "").strip()
     if not group_name:
