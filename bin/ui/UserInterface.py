@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from typing import List
 from PySide6.QtWidgets import (QApplication, QLayoutItem, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLayout,
                                QSizePolicy, QLineEdit, QMessageBox, QMainWindow, QScrollArea, QPlainTextEdit,
-                               QStackedLayout)
-from PySide6.QtGui import QMouseEvent, QTextOption
+                               QStackedLayout, QMenu)
+from PySide6.QtGui import QMouseEvent, QTextOption, QAction
 from PySide6.QtCore import Qt, Slot, QObject, Signal
 from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator
 
@@ -431,6 +431,8 @@ class MainWindow(QWidget):
 
         # 个人信息栏
         self.personalInfoSection = Section((200, 60))
+        self.personalInfoSection.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.personalInfoSection.customContextMenuRequested.connect(lambda pos, target=self.personalInfoSection: self.rcMenuOfPersonalInfoBar(pos, target))
         self.personalID = QLabel("ID")
         self.personalID.setFont(Fonts.UniversalPlainFont)
         self.personalUID = QLabel("UID:123456")
@@ -761,6 +763,37 @@ class MainWindow(QWidget):
 
         return chatRowSection
 
+    def onReceivedMessage(self, chatUID: str, msg: Message) -> bool:
+        '''
+        当接收到新消息后执行
+        判断该消息是否为当前打开的Chat, 若是则直接刷新, 若否, 仅加入到消息缓存中
+
+        Args:
+            chatUID(str): 聊天对象的UID, 若是私聊消息则为消息发送人的UID, 若是群聊消息则为群聊的GID
+            msg(Message): 接收到的消息对象
+
+        Returns:
+            bool: 执行成功与否
+        '''
+        
+        # 缓存中不存在该UID, 则向服务器请求获取聊天记录
+        if not (chatUID in self.cachedChatHistory.keys()):
+            self.cachedChatHistory.update({chatUID: CT.fetch_history(chatUID)})
+            return True
+
+        # 先加入到缓存中
+        chatQuote: List[Message] = self.cachedChatHistory[chatUID]
+        chatQuote.append(msg)
+        
+        # 若为当前界面, 则显示该消息
+        _ = self.generateChatRowSection(msg)
+        self.messageDisplayLayout.addWidget(_)
+        scrollBar = self.scrollableMessageLayout.verticalScrollBar()
+        scrollBar.setValue(scrollBar.maximum())
+        self.messageDisplayLayout.update()
+
+        return True
+
     @Slot(str)
     def showSpecificChatArea(self, UID: str, isGroup: bool):
 
@@ -911,6 +944,23 @@ class MainWindow(QWidget):
         #     print(f"成功发送给 {target_friend}: {text}")
         # else:
         #     QMessageBox.warning(self, "错误", "未连接到服务器！")
+
+    @Slot()
+    def rcMenuOfPersonalInfoBar(self, pos, target):
+
+        menu = QMenu(self)
+
+        actionAddFriend = QAction("添加好友", self)
+        actionAddParty = QAction("添加群聊", self)
+        actionCreateParty = QAction("发起群聊", self)
+
+        menu.addAction(actionAddFriend)
+        menu.addSeparator()
+        menu.addAction(actionAddParty)
+        menu.addSeparator()
+        menu.addAction(actionCreateParty)
+
+        menu.exec_(target.mapToGlobal(pos))
 
 def cleanWidgetsInLayout(layout: QLayout, left: int = 0):
     '''清理布局中的组件, 但保留最后left数量的组件'''
