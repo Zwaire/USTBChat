@@ -8,7 +8,7 @@ from utils.logger import get_logger
 
 import threading
 from datetime import datetime
-from ai_client import AIServiceClient
+# from ai_client import AIServiceClient
 
 # 引入 ustbchat 的数据库操作模块
 from data import data as db
@@ -25,7 +25,7 @@ class ChatServer:
         # 记录在线用户 {username: {"conn": socket, "ip": ip_addr}}
         self.clients = {}
         self.lock = threading.Lock()
-        self.ai_client = AIServiceClient("http://192.168.182.128:5001", timeout=60)
+        # self.ai_client = AIServiceClient("http://192.168.182.128:5001", timeout=60)
         self.ai_name = "智能助手"
 
     def normalize_friend_list(self, data):
