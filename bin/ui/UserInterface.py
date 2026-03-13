@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (QApplication, QLayoutItem, QWidget, QLabel, QPush
                                QStackedLayout, QMenu)
 from PySide6.QtGui import QMouseEvent, QTextOption, QAction
 from PySide6.QtCore import Qt, Slot, QObject, Signal
-from CommonCouple import Section, Fonts, Button, ClassicLayout, Separator, TextInput
+from bin.ui.CommonCouple import Section, Fonts, Button, ClassicLayout, Separator, TextInput
 
 # 新增引入状态管理和消息模型
 # from bin.state.AppState import AppState
