@@ -1122,6 +1122,7 @@ class MainWindow(QWidget):
             _.hasBeenClicked.connect(lambda uid = _.UID, name = _.Name, isGroup = False: self.showSpecificChatArea(uid, name, isGroup))
             self.friendsBarList.append(_)
 
+        wipeOutChildItemOfLayout(self.friendsListLayout)
         for i in range(len(self.friendsBarList)):
             self.friendsListLayout.insertWidget(self.friendsListLayout.count() - 1, self.friendsBarList[i])
 
@@ -1162,6 +1163,7 @@ class MainWindow(QWidget):
             _.hasBeenClicked.connect(lambda uid = _.UID, name = _.Name, isGroup = True: self.showSpecificChatArea(uid, name, isGroup))
             self.partiesBarList.append(_)
 
+        wipeOutChildItemOfLayout(self.partiesListLayout)
         for i in range(len(self.partiesBarList)):
             self.partiesListLayout.insertWidget(self.partiesListLayout.count() - 1, self.partiesBarList[i])
 
