@@ -163,18 +163,14 @@ class ChatServer:
                     res = db.log_in(username, code, addr[0])
                     # status: 0为成功，2为密码错误等
                     if res.get("status") == 0:
-                        print("jiujiuwo")
+                        print("password correct")
                         current_user = username
                         with self.lock: 
                             self.clients[current_user] = {"conn": conn, "ip": addr[0]}
                         logger.info(f"User {current_user} ({addr[0]}) connected.")
-                        # conn.sendall(encode_msg({"type": "login", "status": True}))
-                        # 返回 uid, nickname, friends, groups。
-                        # 注：目前 data.py 没有提供 get_friends 等接口，暂时传入空列表以保证客户端 AppState 能够正确完成初始化。未来数据库支持后在此替换即可。
-
+  
                         conn.sendall(encode_msg(res))
                     else:
-                        # [TODO] 和文档的返回密码对不上
                         conn.sendall(encode_msg(res))
 
                 # 5. 添加好友
