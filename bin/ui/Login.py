@@ -197,6 +197,11 @@ class LoginWindow(QWidget):
             self.warning(str(result))
             return
 
+        result = self.pwdInputerLogin.getInput() if self.switchLayout.currentIndex() == 0 else self.pwdInputerRegister.getInput()
+        if result != True:
+            self.warning(str(result))
+            return False
+
         # 获取ID, 向服务器发送找回密码请求,[get password]
         try:
             serverReply =  tool._request_pwd_find(account)
