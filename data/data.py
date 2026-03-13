@@ -368,8 +368,10 @@ def get_friends(name):
     friends = []
     for item in results:
         friend_id = item[0]
-        print(name,"friend_id:", friend_id)
-        sql = "select * from users where user_id=%s"
+        # print(name,"------------friend_id:", friend_id)
+        sql = "select * from users where id=%s"
+        # print("执行的SQL:", sql)
+        # print("参数:", (friend_id,))
         cursor.execute(sql, (friend_id,))
         result_user = cursor.fetchone()
         if result_user:

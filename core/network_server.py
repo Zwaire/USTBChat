@@ -219,7 +219,7 @@ class ChatServer:
                         username = current_user
                     res = db.get_friends(username)
                     res = self.normalize_friend_list(res)
-                    print('=====测试有没有进入=====================')
+                    # print('=====测试有没有进入=====================')
                     conn.sendall(encode_msg({
                         "type": "friend_list",
                         "friends": res
