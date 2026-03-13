@@ -51,10 +51,19 @@ class USTBChatClient:
         '''
         if not msg or not isinstance(msg, dict):
             return
-        if msg["type"] == 'message':
-            _main_window.onReceivedMessage(msg[])
+        
+        chat_uid = msg.get('friendid') or msg.get('groupid')
+        if not chat_uid:
+            print('Not Usefull ID, ignore ', msg)
+            return 
+        if _main_window is None:
+            return 
 
-        def onReceivedMessage(self, chatUID: str, msg: Message) -> bool
+        try:
+            _main_window.onReceivedMessage(chat_uid, msg)
+        except KeyError as e:
+            print("KeyError")
+
     def start(self):
         if self.login_window:
             self.login_window.show()
