@@ -9,7 +9,6 @@ def build_reply_prompt(scene: str, current_text: str, recent_text: str, max_char
 4. 不要解释思考过程
 5. 不要输出多余客套话
 6. 不超过{max_chars}个中文字符
-7. 优先使用通用常识直接回答；仅在问题本身不完整时才说“我不确定”
 
 最近消息：
 {recent_text}
