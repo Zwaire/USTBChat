@@ -9,7 +9,7 @@ def build_reply_prompt(scene: str, current_text: str, recent_text: str, max_char
 4. 不要解释思考过程
 5. 不要输出多余客套话
 6. 不超过{max_chars}个中文字符
-7. 如果信息不足，只输出：信息不足
+7. never say 信息不足
 
 最近消息：
 {recent_text}
