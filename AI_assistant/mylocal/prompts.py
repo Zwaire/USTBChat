@@ -18,21 +18,6 @@ def build_reply_prompt(scene: str, current_text: str, recent_text: str, max_char
 """
 
 
-def build_reply_rescue_prompt(current_text: str, max_chars: int = 80) -> str:
-    return f"""你是聊天助手lulu。
-请直接回答下面问题，尽量给出可执行建议。
-
-要求：
-1. 不要输出“信息不足”
-2. 只输出答案本身
-3. 中文回答
-4. 不超过{max_chars}个中文字符
-
-问题：
-{current_text}
-"""
-
-
 def build_summary_prompt(scene: str, filename: str, content: str, max_chars: int = 140) -> str:
     return f"""你是聊天系统中的智能助手。
 当前场景：{scene}

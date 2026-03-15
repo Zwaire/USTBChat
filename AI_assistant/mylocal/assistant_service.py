@@ -78,9 +78,7 @@ def _validate_recent_messages(data: dict, resp_type: str):
 @app.route("/health", methods=["GET"])
 def health():
     runtime = get_ollama_runtime_status()
-    ready = bool(runtime.get("sdk_available")) and (
-        bool(runtime.get("active_model")) or len(runtime.get("available_models") or []) > 0
-    )
+    ready = bool(runtime.get("sdk_available")) and bool(runtime.get("model_ready"))
     return jsonify({
         "type": "health",
         "status": 0 if ready else 1,
